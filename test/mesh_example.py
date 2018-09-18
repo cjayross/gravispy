@@ -15,12 +15,11 @@ varying vec3 v_normal;
 
 void main ( void )
 {
-    v_normal = a_normal;
     // center the teapot by the average of a_position.xy
     vec3 position = a_position - vec3( .05393738, 1.724137, 0. );
-    //v_position = position;
     gl_Position = u_proj * u_view * u_model * vec4( position, 1. );
     v_position = gl_Position.xyz;
+    v_normal = (u_model * vec4( a_normal, 1. )).xyz;
 }
 """
 
@@ -51,17 +50,15 @@ vec3 run( vec3 Q )
     vec3 col_ray = vec3( u_ambient );
 
     col_ray += u_light_intensity * max( dot(N, toL), 0. ) * u_base_color;
-    col_ray += u_light_specular.x * u_light_color *
-            pow( max( dot( N, normalize(toL + toO) ), 0. ), u_light_specular.y );
+    col_ray += u_light_specular.x * u_light_color
+               * pow( max( dot( N, normalize(toL + toO) ), 0. ), u_light_specular.y );
 
     return clamp( u_reflection * col_ray, 0., 1. );
 }
 
 void main ( void )
 {
-    //gl_FragColor = vec4( v_position, 1. );
     gl_FragColor = vec4( run(v_position), 1. );
-    //gl_FragColor = vec4( run(gl_FragCoord.xyz), 1. );
 }
 """
 
@@ -133,12 +130,12 @@ class Canvas ( app.Canvas ):
         self.teapot['u_model'] = self.normals['u_model'] = np.eye( 4, dtype=np.float32 )
         self.teapot['u_base_color'] = (0, 1, 0)
         self.teapot['u_reflection'] = 1.
-        self.teapot['u_ambient'] = .15
+        self.teapot['u_ambient'] = .11
         self.teapot['u_light_color'] = (1, 1, 1)
         self.teapot['u_light_intensity'] = 1.
         self.teapot['u_light_specular'] = (1, 50)
-        self.teapot['u_light_position'] = (10, 10, -20)
-        self.teapot['u_O'] = (0, 0, -10)
+        self.teapot['u_light_position'] = (10, 10, 20)
+        self.teapot['u_O'] = (0, 0, 10)
 
         self.theta, self.phi = 0, 0
 
