@@ -33,8 +33,12 @@ void main ( void )
 """
 
 def teapot ():
+    # this data type will keep the data recieved from the obj file organized.
+    # vispy will automatically separate out the attributes included here and
+    # set the vertex shader accordingly.
     vtype = [('a_position', np.float32, 3),
              ('a_normal', np.float32, 3)]
+    # the last return value will be None since this object does not have any texture coordinates.
     V, F, N, _ = io.read_mesh('./obj/teapot.obj')
     vertices = np.zeros( len(V), dtype=vtype )
     vertices['a_position'] = V
@@ -49,11 +53,18 @@ class Canvas ( app.Canvas ):
         self.V, self.F = teapot()
 
         self.program = gloo.Program( VSHADER, FSHADER )
+        # initialize a buffer of all the vertices
         self.program.bind(gloo.VertexBuffer(self.V))
+        # each element in F is an array of 3 indices corresponding to the
+        # locations within the vertex buffer that represent the face's 3 vertices.
+        # when we draw the object, openGL will handle this association process automatically.
         self.FF = gloo.IndexBuffer(self.F)
 
-        self.program['u_model'] = np.eye( 4, dtype=np.float32 )
+        # u_view is the location of the camera.
         self.program['u_view'] = translate((0,0,-10))
+        # u_model is how the world is represented relative to the camera.
+        # in this case, we intend on having the teapot spin around.
+        self.program['u_model'] = np.eye( 4, dtype=np.float32 )
         self.theta, self.phi = 0, 0
 
         self.set_viewport()
