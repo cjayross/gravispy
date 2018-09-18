@@ -45,8 +45,7 @@ void main ( void )
 class Canvas ( app.Canvas ):
     def __init__ ( self ):
         # initialize the Canvas
-        app.Canvas.__init__( self, position=(300,100),
-                             size=(800,600), keys='interactive' )
+        app.Canvas.__init__( self, size=(800,600), keys='interactive' )
         # compile the programs for the blackhole and backdrop
         self.program = gloo.Program( VSHADER, FSHADER )
 

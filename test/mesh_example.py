@@ -108,7 +108,8 @@ def teapot ():
 class Canvas ( app.Canvas ):
 
     def __init__ ( self ):
-        app.Canvas.__init__( self, keys='interactive', size=(800,600) )
+        # config=dict(samples=8) turns on 4x MSAA (anti-aliasing)
+        app.Canvas.__init__( self, keys='interactive', size=(800,600), config=dict(samples=4))
 
         self.V, self.F = teapot()
 
