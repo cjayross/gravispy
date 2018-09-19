@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 from vispy import app, gloo, io
 from vispy.util.transforms import perspective, rotate, translate
 
@@ -99,7 +100,7 @@ def teapot ():
     vtype = [('a_position', np.float32, 3),
              ('a_normal', np.float32, 3)]
     # the last return value will be None since this object does not have any texture coordinates.
-    V, F, N, _ = io.read_mesh('./obj/teapot.obj')
+    V, F, N, _ = io.read_mesh(Path('./obj/teapot.obj'))
     vertices = np.zeros( len(V), dtype=vtype )
     vertices['a_position'] = V
     vertices['a_normal'] = N
