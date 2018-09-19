@@ -4,9 +4,8 @@ from vispy import app, gloo
 VSHADER = """
 #version 120
 
-// variables passed in from Canvas
+// variable passed in from Canvas
 attribute vec2 a_position;
-attribute vec2 a_texcoord;
 // variable that will be passed to fragment shader
 varying vec2 v_position;
 
