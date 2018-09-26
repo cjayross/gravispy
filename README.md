@@ -5,6 +5,8 @@ Gravitational simulations written in Python.
 
 + numpy
 + vispy
++ sympy
++ scipy
 + pyopencl ( prospectively )
 
 ### References
