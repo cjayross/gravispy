@@ -1,5 +1,5 @@
-from metric import *
-from gravipy import *
+from gravispy.geom.metric import *
+from gravispy.ext.gravipy import *
 t,r,theta,phi,M,m,E,L = symbols('t r theta phi M m E L', real=True)
 F = Function('F')
 G = Function('G')
