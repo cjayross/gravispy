@@ -1,6 +1,0 @@
-README.md
-gravispy/__init__.py
-gravispy.egg-info/PKG-INFO
-gravispy.egg-info/SOURCES.txt
-gravispy.egg-info/dependency_links.txt
-gravispy.egg-info/top_level.txt
