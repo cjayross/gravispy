@@ -1,16 +1,36 @@
 from ..ext.gravipy import All, MetricTensor, Matrix, Rational, simplify, symbols, diff, diag, sin, pi
 
 class Schwarzschild (MetricTensor):
+    """
+    The Schwarzschild metric.
 
-    def __init__ (self, symbol, coords, mass):
+    The metric is defined (in the default timelike signature):
+    Matrix([
+    [1 - 2*M/r,              0,     0,                   0],
+    [        0, -1/(1 - 2*M/r),     0,                   0],
+    [        0,              0, -r**2,                   0],
+    [        0,              0,     0, -r**2*sin(theta)**2]])
+
+    Parameters
+    ----------
+    symbol : str
+        The symbol used to represent the metric.
+    coords : Coordinates
+        Coordinates as defined in ext.gravipy
+    mass : Symbol | float
+        Mass of the reference object; provided either symbolically with sympy or literally
+    """
+
+    def __init__ (self, symbol, coords, mass, timelike=True):
         metric = diag( 1 - 2*mass/coords(-2),
                        -1 / (1 - 2*mass/coords(-2)),
                        -coords(-2)**2,
                        -coords(-2)**2*sin(coords(-3))**2 )
+        if not timelike: metric = -1 * metric
         super(Schwarzschild, self).__init__(symbol, coords, metric)
 
-        self.is_timelike = True
-        self.is_spacelike = False
+        self.is_timelike = timelike
+        self.is_spacelike = not timelike
         self._affine_parameter = symbols('eta', real=True)
         self._principal = None
         self._principal_parameters = None
