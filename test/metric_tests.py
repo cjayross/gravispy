@@ -55,8 +55,7 @@ class Vals (object):
         self.ld2Phi = lambdify(r, diff(self.dPhi, r), 'numpy')
 
 v = Vals()
-step = 1e+3
-tt = np.linspace(0,1e+3,step)
+tt = np.linspace(0,1000,1000)
 
 def f(t, y): return np.array([ v.ldR(y[0]), v.ldPhi(y[0]) ])
 def df(t, y): return np.array([[v.ld2R(y[0]), 0], [v.ld2Phi(y[0]), 0]])
