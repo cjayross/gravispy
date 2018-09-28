@@ -8,5 +8,4 @@ setup(
         version='0.1-dev',
         packages=['gravispy',],
         install_requires=['numpy', 'sympy', 'scipy'],
-        extras_require = {'planned implementations' : 'pyopencl'}
         )
