@@ -5,7 +5,6 @@ def time_stamp (message):
 
 import numpy as np
 import matplotlib.pyplot as plt
-#from matplotlib.patches import Circle
 from scipy.integrate import solve_ivp
 from gravispy.geom.metric import *
 from gravispy.ext.gravipy import *
