@@ -6,7 +6,7 @@ def time_stamp (message):
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
-from gravispy.geom.metric import *
+from gravispy.metric import *
 from gravispy.ext.gravipy import *
 time_stamp('Loaded modules')
 
