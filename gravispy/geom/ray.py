@@ -2,12 +2,11 @@ import numpy as np
 
 class Ray (object):
     def __init__(self, origin, direction):
-        if not isinstance(origin, (list, tuple, np.ndarray)) or len(origin) not in (2,3):
-            raise TypeError('origin must be either 2D or 3D cartesian coordinates')
+        if not isinstance(origin, (list, tuple, np.ndarray)) or len(origin) is not 3:
+            raise TypeError('origin must be 3D cartesian coordinates')
         if not isinstance(direction, (list, tuple, np.ndarray)) or len(direction) not in (2,3):
             raise TypeError('direction must be given as either a pair of angles or a 3D vector')
 
-        if len(origin) is 2: origin = list(origin) + [0]
         self.origin = np.array(origin)
         if len(direction) is 2:
             self.angles = np.array(direction)
