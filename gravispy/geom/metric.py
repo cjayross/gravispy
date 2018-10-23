@@ -1,6 +1,6 @@
 import numpy as np
 import itertools as it
-from sympy import *
+from sympy import Matrix, Symbol, lambdify, zeros, ones, diag, sin
 
 class Metric (object):
     def __init__(self, coords, matrix, *args, **kwargs):
@@ -16,12 +16,15 @@ class Metric (object):
             raise TypeError('coordinates must be Symbols')
 
         self.shape = self._A.shape
-        self._coords = tuple(coords)
-        self._basis = self._coords
+        self.dims = self.shape[0]
+        self.basis = tuple(coords)
+        self._coords = self.basis
         self._vars = tuple(v for v in self.__args if isinstance(v, Symbol))
         self.coords = dict(zip(map(str, self._coords), self._coords))
         self.vars = dict(zip(map(str, self._vars), self._vars))
-        self.conditions = {}
+        self.args = tuple(x for x in self._coords if x in self._A.free_symbols)\
+                    + tuple(v for v in self._vars if v in self._A.free_symbols)
+        self.conditions = self.__kwargs.get('conditions', {})
         self.assumptions = {
                 'spherical' : False,
                 'static' : False,
@@ -37,14 +40,25 @@ class Metric (object):
 
     def _set_generators(self):
         self._T = self._A.T
-        self._I = self._A.inv(method=self.__kwargs.get('inv_method', None))
-        self._Agenerator = lambdify(self._coords + self._vars,
+        reduced_metric = self._A.copy()
+        zero_idxs = [idx for idx in range(reduced_metric.rows)
+                     if reduced_metric.row(idx).is_zero and reduced_metric.col(idx).is_zero]
+        offset = 0
+        for idx in zero_idxs:
+            reduced_metric.row_del(idx-offset)
+            reduced_metric.col_del(idx-offset)
+            offset += 1
+        self._I = reduced_metric.inv(method=self.__kwargs.get('inv_method', None))
+        for idx in zero_idxs:
+            self._I = self._I.col_insert(idx, zeros(self._I.shape[0], 1))\
+                             .row_insert(idx, zeros(1, self._I.shape[1]+1))
+        self._Agenerator = lambdify(self.args,
                                     self._A,
                                     modules=self.__kwargs.get('lambdify_modules', None))
-        self._Tgenerator = lambdify(self._coords + self._vars,
+        self._Tgenerator = lambdify(self.args,
                                     self._T,
                                     modules=self.__kwargs.get('lambdify_modules', None))
-        self._Igenerator = lambdify(self._coords + self._vars,
+        self._Igenerator = lambdify(self.args,
                                     self._I,
                                     modules=self.__kwargs.get('lambdify_modules', None))
 
@@ -58,7 +72,7 @@ class Metric (object):
         return self._Igenerator(*args)
 
     def as_Matrix(self):
-        return self._A
+        return self._A.copy()
 
     def as_ndarray(self):
         return np.asarray(self._A)
@@ -66,18 +80,20 @@ class Metric (object):
     def applyfunc(self, func=Matrix.applyfunc, return_metric=False, *args, **kwargs):
         res = self._A.__getattribute__(func.__name__)(*args, **kwargs)
         if not isinstance(res, Matrix) or not return_metric: return res
-        else: return Metric(self._coords, res, *self.__args, **self.__kwargs)
+        else: return Metric(self.basis, res, conditions=self.conditions, *self.__args, **self.__kwargs)
 
     def inv(self):
-        return Metric(self._coords, self._I, *self.__args, **self.__kwargs)
+        return Metric(self.basis, self._I, conditions=self.conditions, *self.__args, **self.__kwargs)
 
     def transpose(self):
-        return Metric(self._coords, self._T, *self.__args, **self.__kwargs)
+        return Metric(self.basis, self._T, conditions=self.conditions, *self.__args, **self.__kwargs)
 
     def set_conditions(self, *args):
         if (not all(map(isinstance, args, len(args)*[tuple]))
                 or any([len(arg) is not 2 for arg in args])):
             raise TypeError('arguments must be tuples of length 2')
+        if not all(map(lambda a: isinstance(a[1],(int,float)) or a[1].is_number, args)):
+            raise ValueError('conditionals must be constants')
 
         sub_dict = dict(args)
         self._A = self._A.subs(sub_dict)
@@ -88,21 +104,20 @@ class Metric (object):
         coord_keys = tuple(it.compress(self._coords, coords_selector))
         var_keys = tuple(it.compress(self._vars, vars_selector))
 
-        self.coords.update(dict(zip(map(str, coord_keys), [sub_dict[key] for key in coord_keys])))
-        self.vars.update(dict(zip(map(str, var_keys), [sub_dict[key] for key in var_keys])))
-
         for idx in range(len(self._coords)):
             if coords_selector[idx]:
                 self._A.row_del(idx)
                 self._A.col_del(idx)
+                self._A = self._A.col_insert(idx, zeros(self._A.shape[0], 1))\
+                                 .row_insert(idx, zeros(1, self._A.shape[1]+1))
 
-        for idx in range(self._A.rows):
-            if self._A.row(idx).is_zero and self._A.col(idx).is_zero:
-                self._A.row_del(idx)
-                self._A.col_del(idx)
+        self.coords.update(dict(zip(map(str, coord_keys), [sub_dict[key] for key in coord_keys])))
+        self.vars.update(dict(zip(map(str, var_keys), [sub_dict[key] for key in var_keys])))
 
         self._coords = tuple(it.compress(self._coords, np.logical_not(coords_selector)))
         self._vars = tuple(it.compress(self._vars, np.logical_not(vars_selector)))
+        self.args = tuple(x for x in self._coords if x in self._A.free_symbols)\
+                    + tuple(v for v in self._vars if v in self._A.free_symbols)
 
         self._set_generators()
 
@@ -172,7 +187,7 @@ class Schwarzschild (Metric):
     def conformal_factor(self, *args):
         if not self._conformal_factor:
             self._conformal_factor = self.signature[0]*self._A[0,0]
-            self._cfgenerator = lambdify(self._coords + self._vars,
+            self._cfgenerator = lambdify(self.args,
                                          self._conformal_factor,
                                          modules=self.__kwargs.get('lambdify_modules', None))
         if not self._conformal_factor.free_symbols or args:
@@ -184,7 +199,7 @@ class Schwarzschild (Metric):
         if not self._radial_factor:
             if self._radial_factor is 0: return 0
             self._radial_factor = self.signature[1]*simplify(self._A[1,1]/self.conformal_factor())
-            self._rfgenerator = lambdify(self._coords + self._vars,
+            self._rfgenerator = lambdify(self.args,
                                          self._radial_factor,
                                          modules=self.__kwargs.get('lambdify_modules', None))
         if not self._radial_factor.free_symbols or args:
@@ -196,7 +211,7 @@ class Schwarzschild (Metric):
         if not self._angular_factor:
             if self._angular_factor is 0: return 0
             self._angular_factor = self.signature[2]*simplify(self._A[2,2]/self.conformal_factor())
-            self._afgenerator = lambdify(self._coords + self._vars,
+            self._afgenerator = lambdify(self.args,
                                          self._angular_factor,
                                          modules=self.__kwargs.get('lambdify_modules', None))
         if not self._angular_factor.free_symbols or args:
@@ -208,11 +223,11 @@ class Schwarzschild (Metric):
         super(Schwarzschild, self).set_conditions(*args)
 
         new_signature = list(self.signature)
-        for idx,coord in enumerate(self._basis):
+        for idx,coord in enumerate(self.basis):
             if coord not in self._coords: new_signature.pop(idx)
         self.signature = tuple(new_signature)
 
-        if self._radial_factor is not 0 and self._basis[1] not in self._coords:
+        if self._radial_factor is not 0 and self.basis[1] not in self._coords:
             self._radial_factor = 0
-        if self._angular_factor is not 0 and self._basis[2] not in self._coords:
+        if self._angular_factor is not 0 and self.basis[2] not in self._coords:
             self._angular_factor = 0
