@@ -4,20 +4,36 @@ class Ray (object):
     def __init__(self, origin, direction):
         if not isinstance(origin, (list, tuple, np.ndarray)) or len(origin) is not 3:
             raise TypeError('origin must be a 3D cartesian coordinate')
-        if not isinstance(direction, (list, tuple, np.ndarray)) or len(direction) not in (2,3):
-            raise TypeError('direction must be given as either a pair of angles or a 3D vector')
-
         self.origin = np.array(origin)
+        self._build(direction)
+
+    def _build(self, direction):
         if len(direction) is 2:
             self.angles = np.array(direction)
             self.dir = np.array([np.sin(self.angles[0])*np.cos(self.angles[1]),
                                  np.sin(self.angles[0])*np.sin(self.angles[1]),
                                  np.cos(self.angles[0])])
             self.dir = self.dir/np.linalg.norm(self.dir)
-        else:
+            for idx, elem in enumerate(self.dir):
+                if np.isclose(elem, 0, atol=1e-10): self.dir[idx] = 0.
+
+        elif len(direction) is 3:
             self.dir = np.array(direction)/np.linalg.norm(direction)
             self.angles = np.array([np.arccos(self.dir[2]),
                                     np.arctan(self.dir[1]/self.dir[0])])
+            for idx, elem in enumerate(self.angles):
+                if np.isclose(elem, 0, atol=1e-10): self.angles[idx] = 0.
+        else:
+            raise TypeError('direction must be given as either a pair of angles or a 3D vector')
+
+    def deflect(self, angles):
+        self._build(self.angles + angles)
+
+    def deflect_phi(self, phi):
+        self.deflect([0,phi])
+
+    def deflect_theta(self, theta):
+        self.deflect([theta,0])
 
     def __call__(self, param):
         return self.dir*param + self.origin
@@ -68,8 +84,8 @@ def plane_intersect(ray, plane):
         raise TypeError('ray must be a Ray')
     if not isinstance(plane, Plane):
         raise TypeError('plane must be a Plane')
-    numer = (p0 - ray.origin) @ normal
-    denom = ray.dir @ normal
+    numer = (plane.origin - ray.origin) @ plane.normal
+    denom = ray.dir @ plane.normal
     if numer == 0 or denom == 0: return np.NaN
     ret = numer/denom
     return ret if ret > 0 else np.NaN
@@ -79,9 +95,9 @@ def sphere_intersect(ray, sphere):
         raise TypeError('ray must be a Ray')
     if not isinstance(sphere, Sphere):
         raise TypeError('sphere must be a Sphere')
-    OS = ray.origin - s0
+    OS = ray.origin - sphere.origin
     B = 2*ray.dir @ OS
-    C = OS @ OS - radius**2
+    C = OS @ OS - sphere.radius**2
     disc = B**2 - 4*C
     if disc > 0:
         dist = np.sqrt(disc)
