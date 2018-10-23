@@ -19,33 +19,6 @@ class Ray (object):
             self.angles = np.array([np.arccos(self.dir[2]),
                                     np.arctan(self.dir[1]/self.dir[0])])
 
-    def plane_intersect(self, *args):
-        if len(args) is not 2:
-            raise TypeError('plane required as argument defined by an origin and normal')
-        p0 = np.array(args[0])
-        normal = np.array(args[1])
-        numer = (p0 - self.origin) @ normal
-        denom = self.dir @ normal
-        if numer == 0 or denom == 0: return np.NaN
-        ret = numer/denom
-        return ret if ret > 0 else np.NaN
-
-    def sphere_intersect(self, *args):
-        if len(args) is not 2:
-            raise TypeError('sphere required as argument defined by an origin and radius')
-        s0 = np.array(args[0])
-        radius = np.array(args[1])
-        OS = self.origin - s0
-        B = 2*self.dir @ OS
-        C = OS @ OS - radius**2
-        disc = B**2 - 4*C
-        if disc > 0:
-            dist = np.sqrt(disc)
-            Q = (-B - dist)/2 if B < 0 else (-B + dist)/2
-            ret0, ret1 = sorted([Q, C/Q])
-            if not ret1 < 0: return ret1 if ret0 < 0 else ret0
-        return np.NaN
-
     def __call__(self, param):
         return self.dir*param + self.origin
 
@@ -54,3 +27,26 @@ class Ray (object):
 
     def __repr__(self):
         return str(self.__class__)
+
+def plane_intersect(ray, p0, normal):
+    if not isinstance(ray, Ray):
+        raise TypeError('ray must be a Ray object')
+    numer = (p0 - ray.origin) @ normal
+    denom = ray.dir @ normal
+    if numer == 0 or denom == 0: return np.NaN
+    ret = numer/denom
+    return ret if ret > 0 else np.NaN
+
+def sphere_intersect(ray, s0, radius):
+    if not isinstance(ray, Ray):
+        raise TypeError('ray must be a Ray object')
+    OS = ray.origin - s0
+    B = 2*ray.dir @ OS
+    C = OS @ OS - radius**2
+    disc = B**2 - 4*C
+    if disc > 0:
+        dist = np.sqrt(disc)
+        Q = (-B - dist)/2 if B < 0 else (-B + dist)/2
+        ret0, ret1 = sorted([Q, C/Q])
+        if not ret1 < 0: return ret1 if ret0 < 0 else ret0
+    return np.NaN
