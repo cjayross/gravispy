@@ -151,31 +151,18 @@ class Minkowski (Metric):
 
         super(Minkowski, self).__init__([], diag(*self.signature), **kwargs)
 
-class Schwarzschild (Metric):
-    def __init__(self, coords, mass, timelike=True, **kwargs):
+class SphericalMetric (Metric):
+    def __init__(self, coords, matrix, *args, **kwargs):
+        self.__args = args
         self.__kwargs = kwargs
 
-        self.signature = ones(1,4)
-        self.signature[0] *= -1
-        if timelike: self.signature *= -1
-        self.signature = tuple(self.signature)
-
-        if len(coords) is not 4: raise ValueError('Invalid number of coordinates')
-        t, r, th, ph = coords
-        gamma = 1 - 2*mass/r
-
-        super(Schwarzschild, self).__init__(
-                coords, diag(gamma, 1/gamma, r**2, r**2*sin(th)**2) * diag(*self.signature),
-                mass, **kwargs)
-
-        self.is_spacetime = True
-        self.is_timelike = timelike
+        super(SphericalMetric, self).__init__(coords, matrix, *args, **kwargs)
 
         self.assumptions['spherical'] = True
         self.assumptions['static'] = True
 
     def _set_generators(self):
-        super(Schwarzschild, self)._set_generators()
+        super(SphericalMetric, self)._set_generators()
 
         self._conformal_factor = None
         self._radial_factor = None
@@ -220,14 +207,37 @@ class Schwarzschild (Metric):
             return self._angular_factor
 
     def set_conditions(self, *args):
+        super(SphericalMetric, self).set_conditions(*args)
+
+        if self._radial_factor is not 0 and self.basis[1] not in self._coords:
+            self._radial_factor = 0
+        if self._angular_factor is not 0 and self.basis[2] not in self._coords:
+            self._angular_factor = 0
+
+class Schwarzschild (SphericalMetric):
+    def __init__(self, coords, mass, timelike=True, **kwargs):
+        self.__kwargs = kwargs
+
+        self.signature = ones(1,4)
+        self.signature[0] *= -1
+        if timelike: self.signature *= -1
+        self.signature = tuple(self.signature)
+
+        if len(coords) is not 4: raise ValueError('Invalid number of coordinates')
+        t, r, th, ph = coords
+        gamma = 1 - 2*mass/r
+
+        super(Schwarzschild, self).__init__(
+                coords, diag(gamma, 1/gamma, r**2, r**2*sin(th)**2) * diag(*self.signature),
+                mass, **kwargs)
+
+        self.is_spacetime = True
+        self.is_timelike = timelike
+
+    def set_conditions(self, *args):
         super(Schwarzschild, self).set_conditions(*args)
 
         new_signature = list(self.signature)
         for idx,coord in enumerate(self.basis):
             if coord not in self._coords: new_signature.pop(idx)
         self.signature = tuple(new_signature)
-
-        if self._radial_factor is not 0 and self.basis[1] not in self._coords:
-            self._radial_factor = 0
-        if self._angular_factor is not 0 and self.basis[2] not in self._coords:
-            self._angular_factor = 0
