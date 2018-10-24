@@ -1,33 +1,70 @@
 import numpy as np
 
 class Ray (object):
+    """
+    Basic Ray object containing both an origin and a direction.
+    Does not contain information on length, however, allows parameterization.
+
+    When called, returns the location of the ray's endpoint if it had the magnitude specified by
+    the input parameter.
+
+    Parameters
+    ==========
+    origin: 3D coordinate specified by either a list, tuple, or ndarray.
+
+    direction: either described by a pair of angles or a 3D coordinate. In either
+               case, it must be a list, tuple, or ndarray.
+    """
     def __init__(self, origin, direction):
+        # type check origin; direction will be checked in the _build method
         if not isinstance(origin, (list, tuple, np.ndarray)) or len(origin) is not 3:
             raise TypeError('origin must be a 3D cartesian coordinate')
-        self.origin = np.array(origin)
-        self._build(direction)
-
-    def _build(self, direction):
+        self.origin = np.array(origin, dtype=np.float)
+        self._angles = None
+        self._dir = None
         if len(direction) is 2:
-            self.angles = np.array(direction)
-            self.dir = np.array([np.sin(self.angles[0])*np.cos(self.angles[1]),
-                                 np.sin(self.angles[0])*np.sin(self.angles[1]),
-                                 np.cos(self.angles[0])])
-            self.dir = self.dir/np.linalg.norm(self.dir)
-            for idx, elem in enumerate(self.dir):
-                if np.isclose(elem, 0, atol=1e-10): self.dir[idx] = 0.
-
+            self.angles = direction
         elif len(direction) is 3:
-            self.dir = np.array(direction)/np.linalg.norm(direction)
-            self.angles = np.array([np.arccos(self.dir[2]),
-                                    np.arctan(self.dir[1]/self.dir[0])])
-            for idx, elem in enumerate(self.angles):
-                if np.isclose(elem, 0, atol=1e-10): self.angles[idx] = 0.
+            self.dir = direction
         else:
             raise TypeError('direction must be given as either a pair of angles or a 3D vector')
 
+    @property
+    def angles(self):
+        return self._angles
+
+    @property
+    def dir(self):
+        return self._dir
+
+    @angles.setter
+    def angles(self, direction):
+        if len(direction) is 2:
+            self._angles = np.array(direction)
+            self._dir = np.array([np.sin(self._angles[0])*np.cos(self._angles[1]),
+                                  np.sin(self._angles[0])*np.sin(self._angles[1]),
+                                  np.cos(self._angles[0])])
+            self._dir = self._dir/np.linalg.norm(self._dir)
+            # np.isclose helps remedy floating point precision errors.
+            for idx, elem in enumerate(self._dir):
+                if np.isclose(elem, 0, atol=1e-10): self._dir[idx] = 0.
+        else:
+            raise TypeError('direction must be given as a pair of angles')
+
+    @dir.setter
+    def dir(self, direction):
+        if len(direction) is 3:
+            self._dir = np.array(direction)/np.linalg.norm(direction)
+            self._angles = np.array([np.arccos(self._dir[2]),
+                                     np.arctan(self._dir[1]/self._dir[0])])
+            # np.isclose helps remedy floating point precision errors.
+            for idx, elem in enumerate(self._angles):
+                if np.isclose(elem, 0, atol=1e-10): self._angles[idx] = 0.
+        else:
+            raise TypeError('direction must be given as a 3D vector')
+
     def deflect(self, angles):
-        self._build(self.angles + angles)
+        self.angles += angles
 
     def deflect_phi(self, phi):
         self.deflect([0,phi])
@@ -45,6 +82,14 @@ class Ray (object):
         return str(self.__class__)
 
 class Plane (object):
+    """
+    Represents a plane in 3D space.
+    Specified by a plane origin and a normal.
+
+    A plane can be defined by a single Ray argument, otherwise requires two separate 3D vectors.
+
+    We should consider allowing for planes to be confined to a specified height and width.
+    """
     def __init__(self, *args):
         if len(args) is 1:
             if not isinstance(args[0], Ray):
@@ -65,6 +110,9 @@ class Plane (object):
         return str(self.__class__)
 
 class Sphere (object):
+    """
+    Very simple sphere object; should consider expanding in the near future.
+    """
     def __init__(self, origin, radius):
         if not isinstance(origin, (list, tuple, np.ndarray)) or len(origin) is not 3:
             raise TypeError('origin must be a 3D cartesian coordinate')
@@ -80,6 +128,9 @@ class Sphere (object):
         return str(self.__class__)
 
 def plane_intersect(ray, plane):
+    """
+    Returns the ray parameter associated with the ray's intersection with a plane.
+    """
     if not isinstance(ray, Ray):
         raise TypeError('ray must be a Ray')
     if not isinstance(plane, Plane):
@@ -91,6 +142,9 @@ def plane_intersect(ray, plane):
     return ret if ret > 0 else np.NaN
 
 def sphere_intersect(ray, sphere):
+    """
+    Returns the ray parameter associated with the ray's intersection with a sphere.
+    """
     if not isinstance(ray, Ray):
         raise TypeError('ray must be a Ray')
     if not isinstance(sphere, Sphere):
