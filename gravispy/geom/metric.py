@@ -132,7 +132,7 @@ class Metric (object):
         return self.as_ndarray().__str__()
 
     def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, self.as_ndarray().__str__())
+        return str(self.__class__)
 
 class Euclidean (Metric):
     def __init__(self, ndim, **kwargs):
@@ -223,9 +223,11 @@ class Schwarzschild (SphericalMetric):
         if timelike: self.signature *= -1
         self.signature = tuple(self.signature)
 
+        self.mass = mass
+
         if len(coords) is not 4: raise ValueError('Invalid number of coordinates')
         t, r, th, ph = coords
-        gamma = 1 - 2*mass/r
+        gamma = 1 - 2*self.mass/r
 
         super(Schwarzschild, self).__init__(
                 coords, diag(gamma, 1/gamma, r**2, r**2*sin(th)**2) * diag(*self.signature),
@@ -241,3 +243,11 @@ class Schwarzschild (SphericalMetric):
         for idx,coord in enumerate(self.basis):
             if coord not in self._coords: new_signature.pop(idx)
         self.signature = tuple(new_signature)
+
+        try:
+            if self.mass.is_Symbol and self.mass not in self._vars:
+                self.mass = self.vars[str(self.mass)]
+        except: pass
+
+    def radius(self):
+        return 2*self.mass

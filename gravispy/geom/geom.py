@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.linalg import norm
 
-FLOAT_EPSILON = 1e-8
+# This error tolerance will maintain accuracy up to about a meter
+FLOAT_EPSILON = 1e-10
 
 class Ray (object):
     """
@@ -78,6 +79,10 @@ class Ray (object):
     def __repr__(self):
         return str(self.__class__)
 
+class NullRay (Ray):
+    def __init__(self, origin=3*[np.NaN]):
+        super(NullRay, self).__init__(origin, 2*[np.NaN])
+
 class Plane (object):
     """
     Represents a plane in 3D space.
@@ -98,7 +103,7 @@ class Plane (object):
                     or not all(map(lambda a: len(a) is 3, args))):
                 raise TypeError('multiple arguments must be 3D cartesian coordinates')
             self.origin = np.array(args[0])
-            self.normal = np.array(args[1])
+            self.normal = np.array(args[1])/norm(args[1])
 
     def __str__(self):
         return '{}(O:{}, N:{})'.format(self.__class__.__name__, self.origin, self.normal)
