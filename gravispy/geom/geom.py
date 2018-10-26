@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.linalg import norm
 
 class Ray (object):
     """
@@ -63,14 +64,11 @@ class Ray (object):
         else:
             raise TypeError('direction must be given as a 3D vector')
 
-    def deflect(self, angles):
-        self.angles += angles
-
-    def deflect_phi(self, phi):
-        self.deflect([0,phi])
-
-    def deflect_theta(self, theta):
-        self.deflect([theta,0])
+    def deflect(self, angles, axis=[0,0,1]):
+        rotation = rotate3D(angles[0], axis)
+        self.dir = rotation @ self.dir
+        self.angles += [0, angles[1]]
+        self.dir = rotation.T @ self.dir
 
     def __call__(self, param):
         return self.dir*param + self.origin
@@ -159,3 +157,9 @@ def sphere_intersect(ray, sphere):
         ret0, ret1 = sorted([Q, C/Q])
         if not ret1 < 0: return ret1 if ret0 < 0 else ret0
     return np.NaN
+
+def rotate3D(angle, axis=[0,0,1]):
+    axis = np.array(axis)/norm(axis)
+    return (np.cos(angle)*np.eye(3)
+            + np.sin(angle)*np.array([[0, -axis[2], axis[1]],[axis[2], 0, -axis[0]],[-axis[1], axis[0], 0]])
+            + (1-np.cos(angle))*np.outer(axis, axis))
