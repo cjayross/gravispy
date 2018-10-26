@@ -1,6 +1,8 @@
 import numpy as np
 from numpy.linalg import norm
 
+FLOAT_EPSILON = 1e-8
+
 class Ray (object):
     """
     Basic Ray object containing both an origin and a direction.
@@ -48,7 +50,7 @@ class Ray (object):
             self._dir = self._dir/np.linalg.norm(self._dir)
             # np.isclose helps remedy floating point precision errors.
             for idx, elem in enumerate(self._dir):
-                if np.isclose(elem, 0, atol=1e-10): self._dir[idx] = 0.
+                if np.isclose(elem, 0, atol=FLOAT_EPSILON): self._dir[idx] = 0.
         else:
             raise TypeError('direction must be given as a pair of angles')
 
@@ -60,15 +62,12 @@ class Ray (object):
                                      np.arctan(self._dir[1]/self._dir[0])])
             # np.isclose helps remedy floating point precision errors.
             for idx, elem in enumerate(self._angles):
-                if np.isclose(elem, 0, atol=1e-10): self._angles[idx] = 0.
+                if np.isclose(elem, 0, atol=FLOAT_EPSILON): self._angles[idx] = 0.
         else:
             raise TypeError('direction must be given as a 3D vector')
 
-    def deflect(self, angles, axis=[0,0,1]):
-        rotation = rotate3D(angles[0], axis)
-        self.dir = rotation @ self.dir
-        self.angles += [0, angles[1]]
-        self.dir = rotation.T @ self.dir
+    def rotate(self, angle, axis=[0,0,1]):
+        self.dir = rotate3D(angle, axis) @ self.dir
 
     def __call__(self, param):
         return self.dir*param + self.origin
@@ -125,14 +124,10 @@ class Sphere (object):
     def __repr__(self):
         return str(self.__class__)
 
-def plane_intersect(ray, plane):
+def plane_intersect(plane, ray):
     """
     Returns the ray parameter associated with the ray's intersection with a plane.
     """
-    if not isinstance(ray, Ray):
-        raise TypeError('ray must be a Ray')
-    if not isinstance(plane, Plane):
-        raise TypeError('plane must be a Plane')
     numer = (plane.origin - ray.origin) @ plane.normal
     denom = ray.dir @ plane.normal
     if numer == 0 or denom == 0: return np.NaN
@@ -143,10 +138,6 @@ def sphere_intersect(ray, sphere):
     """
     Returns the ray parameter associated with the ray's intersection with a sphere.
     """
-    if not isinstance(ray, Ray):
-        raise TypeError('ray must be a Ray')
-    if not isinstance(sphere, Sphere):
-        raise TypeError('sphere must be a Sphere')
     OS = ray.origin - sphere.origin
     B = 2*ray.dir @ OS
     C = OS @ OS - sphere.radius**2
