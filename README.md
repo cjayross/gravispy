@@ -21,6 +21,10 @@ This link discusses the exact lensing equations that we are interested in:
 
 <https://arxiv.org/pdf/gr-qc/0307072.pdf>
 
+The following is more abstract, but still has a couple of tips to consider:
+
+<https://arxiv.org/pdf/gr-qc/0001037.pdf>
+
 ### Installation
 
 To install in developer mode, go to the base directory that you've cloned and execute the pip command:
