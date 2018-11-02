@@ -1,8 +1,22 @@
 import numpy as np
 import itertools as it
-from sympy import Matrix, Symbol, lambdify, zeros, ones, diag, sin
+from sympy import Matrix, Symbol, lambdify, simplify, trace, zeros, ones, eye, diag, sin
 
 class Metric (object):
+    """
+    Abstract metric object.
+    Metrics are numpy arrays of callable functions representing each components of a metric tensor.
+
+    Parameters
+    ==========
+        coords : list of Symbols denoting the coordinates used for argument bookkeeping.
+        matrix : Matrix representing representing the components of the metric.
+        *args : Symbols representing additional dependencies of the metric tensor.
+
+    Examples
+    ========
+    TODO
+    """
     def __init__(self, coords, matrix, *args, **kwargs):
         self.__args = args
         self.__kwargs = kwargs
@@ -17,16 +31,27 @@ class Metric (object):
 
         self.shape = self._A.shape
         self.dims = self.shape[0]
+        # the basis remains constant
         self.basis = tuple(coords)
+        # coordinates are used as arguments to lambdified metric compononents.
+        # self._coords is subject to change depending on conditions set by the user.
         self._coords = self.basis
+        # variables are used as arguments to lambdified metric compononents.
+        # self._vars is subject to change depending on conditions set by the user.
         self._vars = tuple(v for v in self.__args if isinstance(v, Symbol))
+        # self.coords and self.vars are the canonical representation for the metric arguments.
+        # they retain their initial values as keys to the dictionary but their values
+        # are subject to change based on conditions.
         self.coords = dict(zip(map(str, self._coords), self._coords))
         self.vars = dict(zip(map(str, self._vars), self._vars))
+        # self.args is the tuple representing what will be used in lambdified metric components.
+        # their order is to remain constant but elements may be removed by conditions.
         self.args = tuple(x for x in self._coords if x in self._A.free_symbols)\
                     + tuple(v for v in self._vars if v in self._A.free_symbols)
         self.conditions = self.__kwargs.get('conditions', {})
         self.assumptions = {
                 'spherical' : False,
+                'axial' : False,
                 'static' : False,
                 }
 
@@ -40,16 +65,17 @@ class Metric (object):
 
     def _set_generators(self):
         self._T = self._A.T
+        # the reduced metric is a nonsingular version of the metric.
+        # singular metrics may arise from conditions set by the user.
         reduced_metric = self._A.copy()
         zero_idxs = [idx for idx in range(reduced_metric.rows)
                      if reduced_metric.row(idx).is_zero and reduced_metric.col(idx).is_zero]
-        offset = 0
-        for idx in zero_idxs:
+        for offset, idx in enumerate(zero_idxs):
             reduced_metric.row_del(idx-offset)
             reduced_metric.col_del(idx-offset)
-            offset += 1
         self._I = reduced_metric.inv(method=self.__kwargs.get('inv_method', None))
         for idx in zero_idxs:
+            # replace the missing row and column.
             self._I = self._I.col_insert(idx, zeros(self._I.shape[0], 1))\
                              .row_insert(idx, zeros(1, self._I.shape[1]+1))
         self._Agenerator = lambdify(self.args,
@@ -106,6 +132,8 @@ class Metric (object):
 
         for idx in range(len(self._coords)):
             if coords_selector[idx]:
+                # replace the metric column and row of the coordinate with 0 since
+                # the coordinate's differential is 0
                 self._A.row_del(idx)
                 self._A.col_del(idx)
                 self._A = self._A.col_insert(idx, zeros(self._A.shape[0], 1))\
@@ -116,6 +144,7 @@ class Metric (object):
 
         self._coords = tuple(it.compress(self._coords, np.logical_not(coords_selector)))
         self._vars = tuple(it.compress(self._vars, np.logical_not(vars_selector)))
+        # update the args such that they preserve their ordering
         self.args = tuple(x for x in self._coords if x in self._A.free_symbols)\
                     + tuple(v for v in self._vars if v in self._A.free_symbols)
 
@@ -123,7 +152,7 @@ class Metric (object):
 
     def __getitem__(self, key):
         elem = np.asarray(self._A).__getitem__(key)
-        return lambdify(self._coords + self._vars, elem, modules=self.__kwargs.get('lambdify_modules', None))
+        return lambdify(self.args, elem, modules=self.__kwargs.get('lambdify_modules', None))
 
     def __call__(self, *args):
         return self.A(*args)
@@ -138,31 +167,54 @@ class Euclidean (Metric):
     def __init__(self, ndim, **kwargs):
         super(Euclidean, self).__init__([], Matrix.eye(ndim), **kwargs)
 
-class Minkowski (Metric):
-    def __init__(self, timelike=True, **kwargs):
-        self.is_spacetime = True
-        self.is_timelike = timelike
-        self.is_spacelike = not timelike
-
+class SpacetimeMetric (Metric):
+    def __init__(self, coords, matrix, *args, **kwargs):
         self.signature = ones(1,4)
         self.signature[0] *= -1
-        if timelike: self.signature *= -1
+        if kwargs.get('timelike', True): self.signature *= -1
         self.signature = tuple(self.signature)
 
-        super(Minkowski, self).__init__([], diag(*self.signature), **kwargs)
+        matrix = Matrix(matrix)
 
-class SphericalMetric (Metric):
+        # note: empty Matrix is considered square
+        if not matrix.is_square:
+            raise ValueError('spacetime metrics must be defined by square matrices')
+        elif matrix.shape[0] is 0:
+            matrix = eye(4)
+        elif matrix.shape[0] is not 4:
+            raise ValueError('non-minkowski spacetime metrics must have 4 dimensions')
+
+        super(SpacetimeMetric, self).__init__(coords, matrix * diag(*self.signature), *args, **kwargs)
+
+        self.is_spacetime = True
+        self.is_timelike = kwargs.get('timelike', True)
+        self.is_spacelike = not self.is_timelike
+
+    def set_conditions(self, *args):
+        super(SpacetimeMetric, self).set_conditions(*args)
+
+        new_signature = list(self.signature)
+        for idx,coord in enumerate(self.basis):
+            if coord not in self._coords: new_signature.pop(idx)
+        self.signature = tuple(new_signature)
+
+class Minkowski (SpacetimeMetric):
+    def __init__(self, timelike=True, **kwargs):
+        super(Minkowski, self).__init__([], Matrix(), **kwargs)
+
+class SphericalSpacetime (SpacetimeMetric):
     def __init__(self, coords, matrix, *args, **kwargs):
         self.__args = args
         self.__kwargs = kwargs
 
-        super(SphericalMetric, self).__init__(coords, matrix, *args, **kwargs)
+        super(SphericalSpacetime, self).__init__(coords, matrix, *args, **kwargs)
 
         self.assumptions['spherical'] = True
-        self.assumptions['static'] = True
+        self.assumptions['axial'] = True
+        self.assumptions['static'] = False
 
     def _set_generators(self):
-        super(SphericalMetric, self)._set_generators()
+        super(SphericalSpacetime, self)._set_generators()
 
         self._conformal_factor = None
         self._radial_factor = None
@@ -207,22 +259,16 @@ class SphericalMetric (Metric):
             return self._angular_factor
 
     def set_conditions(self, *args):
-        super(SphericalMetric, self).set_conditions(*args)
+        super(SphericalSpacetime, self).set_conditions(*args)
 
         if self._radial_factor is not 0 and self.basis[1] not in self._coords:
             self._radial_factor = 0
         if self._angular_factor is not 0 and self.basis[2] not in self._coords:
             self._angular_factor = 0
 
-class Schwarzschild (SphericalMetric):
+class Schwarzschild (SphericalSpacetime):
     def __init__(self, coords, mass, timelike=True, **kwargs):
         self.__kwargs = kwargs
-
-        self.signature = ones(1,4)
-        self.signature[0] *= -1
-        if timelike: self.signature *= -1
-        self.signature = tuple(self.signature)
-
         self.mass = mass
 
         if len(coords) is not 4: raise ValueError('Invalid number of coordinates')
@@ -230,19 +276,13 @@ class Schwarzschild (SphericalMetric):
         gamma = 1 - 2*self.mass/r
 
         super(Schwarzschild, self).__init__(
-                coords, diag(gamma, 1/gamma, r**2, r**2*sin(th)**2) * diag(*self.signature),
+                coords, diag(gamma, 1/gamma, r**2, r**2*sin(th)**2),
                 mass, **kwargs)
 
-        self.is_spacetime = True
-        self.is_timelike = timelike
+        self.assumptions['static'] = True
 
     def set_conditions(self, *args):
         super(Schwarzschild, self).set_conditions(*args)
-
-        new_signature = list(self.signature)
-        for idx,coord in enumerate(self.basis):
-            if coord not in self._coords: new_signature.pop(idx)
-        self.signature = tuple(new_signature)
 
         try:
             if self.mass.is_Symbol and self.mass not in self._vars:
