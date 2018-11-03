@@ -297,15 +297,6 @@ class SpacetimeMetric (Metric):
         self.is_timelike = kwargs.get('timelike', True)
         self.is_spacelike = not self.is_timelike
 
-    def set_conditions(self, *args):
-        super(SpacetimeMetric, self).set_conditions(*args)
-
-        new_signature = list(self.signature)
-        for idx,coord in enumerate(self.basis):
-            if coord not in self._coords:
-                new_signature.pop(idx)
-        self.signature = tuple(new_signature)
-
 class Minkowski (SpacetimeMetric):
     def __init__(self, timelike=True, **kwargs):
         super(Minkowski, self).__init__([], Matrix(), **kwargs)
