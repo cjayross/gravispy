@@ -1,6 +1,19 @@
 import numpy as np
 from numpy.linalg import norm
 
+__all__ = [
+        'FLOAT_EPSILON',
+        'constants',
+        'geom_units',
+        'Ray',
+        'NullRay',
+        'Plane',
+        'Sphere',
+        'plane_intersect',
+        'sphere_intersect',
+        'rotate3D',
+        ]
+
 # This error tolerance will maintain accuracy up to 1 meter in units of c
 # or about half of a kilometer in astronomical units
 FLOAT_EPSILON = 3.3356409519815204e-09
