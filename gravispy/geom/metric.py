@@ -141,6 +141,12 @@ class Metric (object):
         var_args = (v for v in self._vars if v in self._A.free_symbols)
         self.args = tuple(coord_args) + tuple(var_args)
 
+        if len(self.basis) is not self.shape[0]:
+            raise ValueError('coordinates do not match metric dimensions')
+        elif len(self.args) < len(self._A.free_symbols):
+            raise ValueError('coordinates and variables given do not '\
+                             'sufficiently describe the metric')
+
         self.conditions = self.__kwargs.get('conditions', {})
         self.assumptions = {
                 'spherical' : False,
@@ -282,13 +288,13 @@ class SpacetimeMetric (Metric):
         matrix = Matrix(matrix)
         # note: empty Matrix is considered square
         if not matrix.is_square:
-            raise ValueError('spacetime metrics must be defined\
-                              by square matrices')
+            raise ValueError('spacetime metrics must be defined '\
+                             'by square matrices')
         elif matrix.shape[0] is 0:
             matrix = eye(4)
         elif matrix.shape[0] is not 4:
-            raise ValueError('non-default spacetime metrics\
-                              must have 4 dimensions')
+            raise ValueError('non-default spacetime metrics '\
+                             'must have 4 dimensions')
 
         super(SpacetimeMetric, self).__init__(
                 coords, matrix * diag(*self.signature), *args, **kwargs)
@@ -300,6 +306,8 @@ class SpacetimeMetric (Metric):
 class Minkowski (SpacetimeMetric):
     def __init__(self, timelike=True, **kwargs):
         super(Minkowski, self).__init__([], Matrix(), **kwargs)
+
+        self.assumptions['static'] = True
 
 class SphericalSpacetime (SpacetimeMetric):
     def __init__(self, coords, matrix, *args, **kwargs):
@@ -322,10 +330,14 @@ class SphericalSpacetime (SpacetimeMetric):
 
     def conformal_factor(self, *args):
         if not self._conformal_factor:
+            if (len(self._A[0,0].free_symbols) > 1
+                    or (len(self._A[0,0].free_symbols) is 1
+                        and self.basis[1] not in self._A[0,0].free_symbols)):
+                raise ValueError('metric is not spherically symmetric')
             self._conformal_factor = self.signature[0]*self._A[0,0]
             self._cfgenerator = lambdify(self.args, self._conformal_factor,
                                          modules=self._lambdify_modules)
-        if not self._conformal_factor.free_symbols or args:
+        if args:
             return self._cfgenerator(*args)
         else:
             return self._conformal_factor
@@ -333,12 +345,16 @@ class SphericalSpacetime (SpacetimeMetric):
     def radial_factor(self, *args):
         if not self._radial_factor:
             if self._radial_factor == 0.: return 0.
+            if (len(self._A[1,1].free_symbols) > 1
+                    or (len(self._A[1,1].free_symbols) is 1
+                        and self.basis[1] not in self._A[1,1].free_symbols)):
+                raise ValueError('metric is not spherically symmetric')
             self._radial_factor =\
                     self.signature[1]\
                     * simplify(self._A[1,1]/self.conformal_factor())
             self._rfgenerator = lambdify(self.args, self._radial_factor,
                                          modules=self._lambdify_modules)
-        if not self._radial_factor.free_symbols or args:
+        if args:
             return self._rfgenerator(*args)
         else:
             return self._radial_factor
@@ -346,12 +362,16 @@ class SphericalSpacetime (SpacetimeMetric):
     def angular_factor(self, *args):
         if not self._angular_factor:
             if self._angular_factor == 0.: return 0.
+            if (len(self._A[2,2].free_symbols) > 1
+                    or (len(self._A[2,2].free_symbols) is 1
+                        and self.basis[1] not in self._A[2,2].free_symbols)):
+                raise ValueError('metric is not spherically symmetric')
             self._angular_factor =\
                     self.signature[2]\
                     * simplify(self._A[2,2]/self.conformal_factor())
             self._afgenerator = lambdify(self.args, self._angular_factor,
                                          modules=self._lambdify_modules)
-        if not self._angular_factor.free_symbols or args:
+        if args:
             return self._afgenerator(*args)
         else:
             return self._angular_factor
@@ -359,10 +379,13 @@ class SphericalSpacetime (SpacetimeMetric):
     def set_conditions(self, *args):
         super(SphericalSpacetime, self).set_conditions(*args)
 
-        if self._radial_factor != 0. and self.basis[1] not in self._coords:
-            self._radial_factor = 0.
-        if self._angular_factor != 0. and self.basis[2] not in self._coords:
-            self._angular_factor = 0.
+        if self.basis[1] not in self._coords:
+            self._radial_factor = self._radial_factor.subs(
+                    {self.basis[1]: self.coords[self.basis[1]]})
+            self._angular_factor = self._angular_factor.subs(
+                    {self.basis[1]: self.coords[self.basis[1]]})
+            self._conformal_factor = self._conformal_factor.subs(
+                    {self.basis[1]: self.coords[self.basis[1]]})
 
 class Schwarzschild (SphericalSpacetime):
     """

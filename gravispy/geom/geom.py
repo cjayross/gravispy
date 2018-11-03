@@ -70,8 +70,8 @@ class Ray (object):
         elif len(direction) is 3:
             self.dir = direction
         else:
-            raise TypeError('direction must be given as either a pair of\
-                             angles or a 3D vector')
+            raise TypeError('direction must be given as either a pair of '\
+                            'angles or a 3D vector')
 
     @property
     def angles(self):
@@ -148,8 +148,8 @@ class Plane (object):
             if (not all(map(isinstance, args,
                             len(args)*((list,tuple,np.ndarray),)))
                     or not all(map(lambda a: len(a) is 3, args))):
-                raise TypeError('multiple arguments must be\
-                                 3D cartesian coordinates')
+                raise TypeError('multiple arguments must be '\
+                                '3D cartesian coordinates')
             self.origin = np.array(args[0])
             self.normal = np.array(args[1])/norm(args[1])
 
