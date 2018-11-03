@@ -2,6 +2,14 @@ import numpy as np
 from numpy.linalg import norm
 from .geom import FLOAT_EPSILON, Plane, Ray, NullRay, plane_intersect
 
+__all__ = [
+        'snells_law',
+        'schwarzschild_deflection',
+        'thin_lens',
+        'radial_thin_lens',
+        'schwarzschild_thin_lens',
+        ]
+
 ### Deflection functions ###
 
 def snells_law(theta, ref_index):

@@ -1,7 +1,16 @@
 import numpy as np
 import itertools as it
-from sympy import Matrix, Symbol, lambdify, symbols, simplify, trace,\
+from sympy import Matrix, Symbol, lambdify, symbols, simplify,\
                   zeros, ones, eye, diag, sin
+
+__all__ = [
+        'Metric',
+        'Euclidean',
+        'SpacetimeMetric',
+        'Minkowski',
+        'SphericalSpacetime',
+        'Schwarzschild',
+        ]
 
 class Metric (object):
     """
