@@ -1,6 +1,6 @@
 import numpy as np
 import itertools as it
-from sympy import Matrix, Symbol, lambdify, simplify, trace,\
+from sympy import Matrix, Symbol, lambdify, symbols, simplify, trace,\
                   zeros, ones, eye, diag, sin
 
 class Metric (object):
@@ -11,12 +11,13 @@ class Metric (object):
 
     Parameters
     ==========
-    coords: list of Symbols denoting the coordinates used for argument
-            bookkeeping.
-
-    matrix: Matrix representing representing the components of the metric.
-
-    *args: Symbols representing additional dependencies of the metric.
+    coords: iterable
+        List of Symbols denoting the coordinates used for argument
+        bookkeeping.
+    matrix: Matrix | ndarray | list | tuple
+        Matrix representing representing the components of the metric.
+    *args: Symbols
+        Symbols representing additional dependencies of the metric.
 
     Examples
     ========
@@ -356,7 +357,30 @@ class SphericalSpacetime (SpacetimeMetric):
             self._angular_factor = 0.
 
 class Schwarzschild (SphericalSpacetime):
-    def __init__(self, coords, mass, timelike=True, **kwargs):
+    """
+    The Schwarzschild metric.
+
+    The metric is defined (in the default timelike signature):
+    Matrix([
+    [1 - 2*M/r,              0,     0,                   0],
+    [        0, -1/(1 - 2*M/r),     0,                   0],
+    [        0,              0, -r**2,                   0],
+    [        0,              0,     0, -r**2*sin(theta)**2]])
+
+    Parameters
+    ==========
+    mass : Symbol | float | int
+        Mass of the reference object; provided either symbolically with sympy
+        or literally as an integer or float.
+        Note that if this is zero, then the metric reduces to the Minkowski
+        metric for spherical coordinates.
+    coords : iterable of Symbols
+        Coordinate variables to use.
+        Default coordinates are (t, r, theta, phi)
+    """
+    def __init__(self, mass=Symbol('M', real=True),
+                 coords=symbols('t r theta phi', real=True),
+                 timelike=True, **kwargs):
         self.__kwargs = kwargs
         self.mass = mass
 
@@ -374,10 +398,9 @@ class Schwarzschild (SphericalSpacetime):
     def set_conditions(self, *args):
         super(Schwarzschild, self).set_conditions(*args)
 
-        try:
-            if self.mass.is_Symbol and self.mass not in self._vars:
-                self.mass = self.vars[str(self.mass)]
-        except: pass
+        if (hasattr(self.mass, 'is_Symbol') and self.mass.is_Symbol
+                and self.mass not in self._vars):
+            self.mass = self.vars[str(self.mass)]
 
     def radius(self):
         return 2*self.mass

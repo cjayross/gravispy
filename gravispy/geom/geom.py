@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.linalg import norm
 
-# This error tolerance will maintain accuracy up to about a meter
+# This error tolerance will maintain accuracy up to about
+# 1 meter in units of c or about half of a kilometer in astronomical units
 FLOAT_EPSILON = 3.335641e-9
 
 class Ray (object):
