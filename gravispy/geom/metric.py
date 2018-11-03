@@ -402,5 +402,6 @@ class Schwarzschild (SphericalSpacetime):
                 and self.mass not in self._vars):
             self.mass = self.vars[str(self.mass)]
 
+    @property
     def radius(self):
         return 2*self.mass

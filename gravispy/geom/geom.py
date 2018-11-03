@@ -1,9 +1,32 @@
 import numpy as np
 from numpy.linalg import norm
 
-# This error tolerance will maintain accuracy up to about
-# 1 meter in units of c or about half of a kilometer in astronomical units
-FLOAT_EPSILON = 3.335641e-9
+# This error tolerance will maintain accuracy up to 1 meter in units of c
+# or about half of a kilometer in astronomical units
+FLOAT_EPSILON = 3.3356409519815204e-09
+constant = {
+        'c': 299792458.0,
+        'G': 6.67408e-11,
+        'gravitational constant': 6.67408e-11,
+        'solar_mass': 1.98847e+30,
+        'au': 149597870691.0,
+        'astronomical unit': 149597870691.0,
+        'parsec': 3.0856775813057292e+16,
+        'ly': 9460730472580800.0,
+        'light year': 9460730472580800.0,
+        }
+# geometrized units
+geom_units = {
+        'm': 1.0,
+        'length': 1.0,
+        's': 299792458.0,
+        'time': 299792458.0,
+        'kg': 7.425915486106335e-28, # G/c**2
+        'mass': 7.425915486106335e-28,
+        'velocity': 3.3356409519815204e-09, # 1/c
+        'acceleration': 1.1126500560536185e-17, # 1/c**2
+        'energy': 8.262445281865645e-45, # G/c**4
+        }
 
 class Ray (object):
     """
