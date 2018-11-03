@@ -24,14 +24,17 @@ class Metric (object):
     >>> from numpy import pi
     >>> from sympy import symbols, trace
     >>> from gravispy.geom.metric import Schwarzschild
+
     >>> t, r, th, ph, M = symbols('t r theta phi M', real=True)
     >>> S = Schwarzschild([t, r, th, ph], M, timelike=True)
+
     >>> S.as_Matrix()
     Matrix([
     [-2*M/r + 1,              0,     0,                   0],
     [         0,-1/(-2*M/r + 1),     0,                   0],
     [         0,              0, -r**2,                   0],
     [         0,              0,     0, -r**2*sin(theta)**2]])
+
     >>> S.args
     (r, theta, M)
     >>> S(10, pi/2, 1)
@@ -43,6 +46,7 @@ class Metric (object):
     0.8
     >>> S(10, pi/2, 1)[1,1]
     -1.25
+
     >>> S.set_conditions((M, 1))
     >>> S.as_Matrix()
     Matrix([
@@ -54,6 +58,7 @@ class Metric (object):
     (r, theta)
     >>> S.vars
     {'M': 1}
+
     >>> S.set_conditions((th, pi/2))
     >>> S.as_Matrix()
     Matrix([
@@ -65,15 +70,18 @@ class Metric (object):
     (r,)
     >>> S.coords
     {'t': t, 'r': r, 'theta': 1.5707963267948966, 'phi': phi}
-    >>> S(20)
+
+    >>> S.conditions
+    {'M': 1, 'theta': 1.5707963267948966}
+    >>> S(20) # only requires one argument under these conditions.
     array([[ 0.9 , 0.         , 0. , 0.    ],
            [ 0.  , -1.11111111, 0. , 0.    ],
            [ 0.  , 0.         , 0. , 0.    ],
            [ 0.  , 0.         , 0. , -400. ]])
-    >>> S.conditions
-    {'M': 1, 'theta': 1.5707963267948966}
+
     >>> S.applyfunc(trace)
     -1.0*r**2 + 1 - 1/(1 - 2/r) - 2/r
+
     >>> Si = S.inv()
     >>> Si.as_Matrix()
     Matrix([

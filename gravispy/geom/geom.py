@@ -4,7 +4,7 @@ from numpy.linalg import norm
 # This error tolerance will maintain accuracy up to 1 meter in units of c
 # or about half of a kilometer in astronomical units
 FLOAT_EPSILON = 3.3356409519815204e-09
-constant = {
+constants = {
         'c': 299792458.0,
         'G': 6.67408e-11,
         'gravitational constant': 6.67408e-11,
@@ -38,10 +38,11 @@ class Ray (object):
 
     Parameters
     ==========
-    origin: 3D coordinate specified by either a list, tuple, or ndarray.
-
-    direction: either described by a pair of angles or a 3D coordinate.
-               In either case, it must be a list, tuple, or ndarray.
+    origin: iterable
+        3D coordinate specified by either a list, tuple, or ndarray.
+    direction: iterable
+        Either described by a pair of angles or a 3D coordinate.
+        In either case, it must be a list, tuple, or ndarray.
     """
     def __init__(self, origin, direction):
         # type check origin; direction will be checked in the _build method
