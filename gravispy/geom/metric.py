@@ -16,13 +16,12 @@ class Metric (object):
 
     matrix: Matrix representing representing the components of the metric.
 
-    *args: Symbols representing additional dependencies of the metric
-           tensor.
+    *args: Symbols representing additional dependencies of the metric.
 
     Examples
     ========
     >>> from numpy import pi
-    >>> from sympy import symbols
+    >>> from sympy import symbols, trace
     >>> from gravispy.geom.metric import Schwarzschild
     >>> t, r, th, ph, M = symbols('t r theta phi M', real=True)
     >>> S = Schwarzschild([t, r, th, ph], M, timelike=True)
@@ -65,12 +64,23 @@ class Metric (object):
     (r,)
     >>> S.coords
     {'t': t, 'r': r, 'theta': 1.5707963267948966, 'phi': phi}
-    >>> S(10)
-    array([[ 0.8 , 0.    , 0. , 0.    ],
-           [ 0.  , -1.25 , 0. , 0.    ],
-           [ 0.  , 0.    , 0. , 0.    ],
-           [ 0.  , 0.    , 0. , -100. ]])
+    >>> S(20)
+    array([[ 0.9 , 0.         , 0. , 0.    ],
+           [ 0.  , -1.11111111, 0. , 0.    ],
+           [ 0.  , 0.         , 0. , 0.    ],
+           [ 0.  , 0.         , 0. , -400. ]])
     >>> S.conditions
+    {'M': 1, 'theta': 1.5707963267948966}
+    >>> S.applyfunc(trace)
+    -1.0*r**2 + 1 - 1/(1 - 2/r) - 2/r
+    >>> Si = S.inv()
+    >>> Si.as_Matrix()
+    Matrix([
+    [1/(2/r + 1),       0, 0,         0],
+    [          0,-1 + 2/r, 0,         0],
+    [          0,       0, 0,         0],
+    [          0,       0, 0, -1.0/r**2]])
+    >>> Si.conditions
     {'M': 1, 'theta': 1.5707963267948966}
     """
     def __init__(self, coords, matrix, *args, **kwargs):
