@@ -1,7 +1,16 @@
 import numpy as np
 import itertools as it
-from sympy import Matrix, Symbol, lambdify, symbols, simplify, trace,\
+from sympy import Matrix, Symbol, lambdify, symbols, simplify,\
                   zeros, ones, eye, diag, sin
+
+__all__ = [
+        'Metric',
+        'Euclidean',
+        'SpacetimeMetric',
+        'Minkowski',
+        'SphericalSpacetime',
+        'Schwarzschild',
+        ]
 
 class Metric (object):
     """
@@ -278,7 +287,7 @@ class SpacetimeMetric (Metric):
         elif matrix.shape[0] is 0:
             matrix = eye(4)
         elif matrix.shape[0] is not 4:
-            raise ValueError('non-minkowski spacetime metrics\
+            raise ValueError('non-default spacetime metrics\
                               must have 4 dimensions')
 
         super(SpacetimeMetric, self).__init__(
