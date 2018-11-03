@@ -31,7 +31,7 @@ def thin_lens(plane, rays, deflection_function, *args):
             ret.append(NullRay(RT))
             continue
         new_ray = Ray(RT, -np.sign(D)*plane.normal)
-        if phi is not 0:
+        if phi != 0:
             new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
         ret.append(new_ray)
     return ret
@@ -53,12 +53,12 @@ def radial_thin_lens(plane, rays, deflection_function, *args):
             ret.append(NullRay(RT))
             continue
         new_ray = Ray(RT, ray.dir)
-        # Note the minus sign during future testing
-        if phi is not 0:
-            new_ray.rotate(phi, np.cross(new_ray.dir, -np.sign(D)*plane.normal))
+        if phi != 0:
+            new_ray.rotate(
+                    phi, np.cross(new_ray.dir, -np.sign(D)*plane.normal))
         ret.append(new_ray)
     return ret
 
 def schwarzschild_thin_lens(rays, metric):
-    lens = Plane([0,0,0], rays[0].origin)
-    return radial_thin_lens(lens, rays, schwarzschild_deflection, metric)
+    return radial_thin_lens(Plane([0,0,0], rays[0].origin), rays,
+                            schwarzschild_deflection, metric)
