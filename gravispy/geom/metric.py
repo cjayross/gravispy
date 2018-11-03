@@ -11,15 +11,67 @@ class Metric (object):
 
     Parameters
     ==========
-        coords: list of Symbols denoting the coordinates used for argument
-                bookkeeping.
-        matrix: Matrix representing representing the components of the metric.
-        *args: Symbols representing additional dependencies of the metric
-               tensor.
+    coords: list of Symbols denoting the coordinates used for argument
+            bookkeeping.
+
+    matrix: Matrix representing representing the components of the metric.
+
+    *args: Symbols representing additional dependencies of the metric
+           tensor.
 
     Examples
     ========
-    TODO
+    >>> from numpy import pi
+    >>> from sympy import symbols
+    >>> from gravispy.geom.metric import Schwarzschild
+    >>> t, r, th, ph, M = symbols('t r theta phi M', real=True)
+    >>> S = Schwarzschild([t, r, th, ph], M, timelike=True)
+    >>> S.as_Matrix()
+    Matrix([
+    [-2*M/r + 1,              0,     0,                   0],
+    [         0,-1/(-2*M/r + 1),     0,                   0],
+    [         0,              0, -r**2,                   0],
+    [         0,              0,     0, -r**2*sin(theta)**2]])
+    >>> S.args
+    (r, theta, M)
+    >>> S(10, pi/2, 1)
+    array([[ 0.8 , 0.    , 0.    , 0.    ],
+           [ 0.  , -1.25 , 0.    , 0.    ],
+           [ 0.  , 0.    , -100. , 0.    ],
+           [ 0.  , 0.    , 0.    , -100. ]])
+    >>> S[0,0](10, pi/2, 1)
+    0.8
+    >>> S(10, pi/2, 1)[1,1]
+    -1.25
+    >>> S.set_conditions((M, 1))
+    >>> S.as_Matrix()
+    Matrix([
+    [-2/r + 1,              0,     0,                   0],
+    [         0,-1/(-2/r + 1),     0,                   0],
+    [         0,            0, -r**2,                   0],
+    [         0,            0,     0, -r**2*sin(theta)**2]])
+    >>> S.args
+    (r, theta)
+    >>> S.vars
+    {'M': 1}
+    >>> S.set_conditions((th, pi/2))
+    >>> S.as_Matrix()
+    Matrix([
+    [-2/r + 1,              0, 0,         0],
+    [         0,-1/(-2/r + 1), 0,         0],
+    [         0,            0, 0,         0],
+    [         0,            0, 0, -1.0*r**2]])
+    >>> S.args
+    (r,)
+    >>> S.coords
+    {'t': t, 'r': r, 'theta': 1.5707963267948966, 'phi': phi}
+    >>> S(10)
+    array([[ 0.8 , 0.    , 0. , 0.    ],
+           [ 0.  , -1.25 , 0. , 0.    ],
+           [ 0.  , 0.    , 0. , 0.    ],
+           [ 0.  , 0.    , 0. , -100. ]])
+    >>> S.conditions
+    {'M': 1, 'theta': 1.5707963267948966}
     """
     def __init__(self, coords, matrix, *args, **kwargs):
         self.__args = args
@@ -142,7 +194,8 @@ class Metric (object):
 
         sub_dict = dict(args)
         self._A = self._A.subs(sub_dict)
-        self.conditions.update(sub_dict)
+        self.conditions.update(
+                zip(map(str, sub_dict.keys()), sub_dict.values()))
 
         coords_selector = [coord in sub_dict.keys() for coord in self._coords]
         vars_selector = [var in sub_dict.keys() for var in self._vars]
@@ -198,9 +251,7 @@ class SpacetimeMetric (Metric):
         if kwargs.get('timelike', True):
             self.signature *= -1
         self.signature = tuple(self.signature)
-
         matrix = Matrix(matrix)
-
         # note: empty Matrix is considered square
         if not matrix.is_square:
             raise ValueError('spacetime metrics must be defined\
@@ -233,9 +284,6 @@ class Minkowski (SpacetimeMetric):
 
 class SphericalSpacetime (SpacetimeMetric):
     def __init__(self, coords, matrix, *args, **kwargs):
-        self.__args = args
-        self.__kwargs = kwargs
-
         super(SphericalSpacetime, self).__init__(
                 coords, matrix, *args, **kwargs)
 
