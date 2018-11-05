@@ -122,7 +122,7 @@ def static_spherical_grav_lens(rays, rS, metric):
             yield Ray([0,0,0],[1,0,0])
             continue
         # sign of the output source angle, phi
-        sign = np.sign(np.cos(theta))
+        sign = np.sign(theta)*np.sign(np.cos(theta))
         break_points = [0.]
 
         if hasattr(metric, 'unstable_orbits'):
