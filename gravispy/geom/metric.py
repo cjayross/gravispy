@@ -325,9 +325,8 @@ class SphericalSpacetime (SpacetimeMetric):
         self.assumptions['static'] = False
 
         for i in range(3):
-            if (self.basis[1] not in self._A[i,i].free_symbols
-                    or any(map(lambda c: c in self._A[i,i].free_symbols,
-                               (self.basis[2], self.basis[3])))):
+            if (any(map(lambda c: c in self._A[i,i].free_symbols,
+                       (self.basis[2], self.basis[3])))):
                 raise ValueError('metric is not spherically symmetric')
         self._conformal_factor = self.signature[0]*self._A[0,0]
         self._radial_factor =\
@@ -415,7 +414,6 @@ class Schwarzschild (SphericalSpacetime):
     def __init__(self, mass=Symbol('M', real=True),
                  coords=symbols('t r theta phi', real=True),
                  timelike=True, **kwargs):
-        self.__kwargs = kwargs
         self.mass = mass
 
         if len(coords) is not 4:
@@ -451,3 +449,29 @@ class Schwarzschild (SphericalSpacetime):
         These radii are defined as the interval r_c \in [3M, 6M].
         """
         return np.array([3*self.mass, 6*self.mass])
+
+class BarriolaVilenkin (SphericalSpacetime):
+    def __init__(self, k=Symbol('k', real=True),
+                 coords=symbols('t r theta phi', real=True),
+                 timelike=True, **kwargs):
+        self._k = k
+        if len(coords) is not 4:
+            raise ValueError('Invalid number of coordinates')
+        t, r, th, ph = coords
+
+        super(BarriolaVilenkin, self).__init__(
+                coords, diag(1,1,self._k**2*r**2,self._k**2*r**2*sin(th)**2),
+                self._k, timelike=timelike, **kwargs)
+
+        self.assumptions['static'] = True
+
+    def set_conditions(self, *args):
+        super(Schwarzschild, self).set_conditions(*args)
+
+        if (hasattr(self._k, 'is_Symbol') and self._k.is_Symbol
+                and self._k not in self._vars):
+            self._k = self.vars[str(self._k)]
+
+    @property
+    def k(self):
+        return self._k
