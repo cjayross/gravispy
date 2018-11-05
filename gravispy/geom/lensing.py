@@ -27,45 +27,41 @@ def schwarzschild_deflection(r, metric):
 ### Lensing functions ###
 
 def thin_lens(plane, rays, deflection_function, *args):
-    ret = []
     for ray in rays:
         T = plane_intersect(plane, ray)
         if T is np.NaN:
-            ret.append(NullRay())
+            yield NullRay()
             continue
         RT = ray(T)
         D = plane.normal @ (ray.origin - plane.origin)
         phi = deflection_function(np.arccos(D/norm(RT-ray.origin)), *args)
         if phi is np.NaN:
-            ret.append(NullRay(RT))
+            yield NullRay(RT)
             continue
         new_ray = Ray(RT, -np.sign(D)*plane.normal)
         if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
             new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
-        ret.append(new_ray)
-    return ret
+        yield new_ray
 
 def radial_thin_lens(plane, rays, deflection_function, *args):
-    ret = []
     for ray in rays:
         T = plane_intersect(plane, ray)
         if T is np.NaN:
-            ret.append(NullRay())
+            yield NullRay()
             continue
         RT = ray(T)
         D = plane.normal @ (ray.origin - plane.origin)
         RP = ray.origin - D*plane.normal
         phi = deflection_function(norm(RP-RT), *args)
         if phi is np.NaN:
-            ret.append(NullRay(RT))
+            yield NullRay(RT)
             continue
         new_ray = Ray(RT, ray.dir)
         if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
             new_ray.rotate(
                     phi,
                     np.cross(new_ray.dir, -np.sign(D)*plane.normal))
-        ret.append(new_ray)
-    return ret
+        yield new_ray
 
 def schwarzschild_thin_lens(rays, metric):
     return radial_thin_lens(Plane([0,0,0], rays[0].origin), rays,
@@ -107,12 +103,11 @@ def static_spherical_grav_lens(rays, rS, metric):
                        / (R2(r)*(R2(r)-R2(rO)*np.sin(theta)**2)))\
                * np.sin(theta)
 
-    ret = []
     for ray in rays:
         # radial position of observer
         rO = norm(ray.origin)
         if rS < rO:
-            ret.append(NullRay([0,0,0]))
+            yield NullRay([0,0,0])
             continue
         # impact parameter
         rP = None
@@ -124,7 +119,7 @@ def static_spherical_grav_lens(rays, rS, metric):
         theta = np.sign(ray.angles[1]) * np.arccos(ray.dir[0])
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
             # by symmetry
-            ret.append(Ray([0,0,0],[1,0,0]))
+            yield Ray([0,0,0],[1,0,0])
             continue
         # sign of the output source angle, phi
         sign = np.sign(np.cos(theta))
@@ -159,7 +154,7 @@ def static_spherical_grav_lens(rays, rS, metric):
             else:
                 if rP < rS:
                     # the lightray never reaches rS
-                    ret.append(NullRay([0,0,0]))
+                    yield NullRay([0,0,0])
                     continue
                 else:
                     boundaries.append((2, rS, rP))
@@ -176,12 +171,11 @@ def static_spherical_grav_lens(rays, rS, metric):
             phi += path[0] * integral[0]
 
         if phi is np.NaN or phi is np.Inf:
-            ret.append(NullRay([0,0,0]))
+            yield NullRay([0,0,0])
             continue
         new_ray = Ray([0,0,0],[1,0,0])
         if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
             new_ray.rotate(
                     sign*phi,
                     np.cross(new_ray.dir, ray.dir))
-        ret.append(new_ray)
-    return ret
+        yield new_ray
