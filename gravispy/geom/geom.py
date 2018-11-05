@@ -14,9 +14,9 @@ __all__ = [
         'rotate3D',
         ]
 
-# This error tolerance will maintain accuracy up to 1 meter in units of c
-# or about half of a kilometer in astronomical units
-FLOAT_EPSILON = 3.3356409519815204e-09
+# This error tolerance will maintain accuracy up to 10 meters in units of c
+# or about 5 kilometers in astronomical units
+FLOAT_EPSILON = 3.3356409519815204e-08
 constants = {
         'c': 299792458.0,
         'G': 6.67408e-11,
@@ -84,7 +84,17 @@ class Ray (object):
     @angles.setter
     def angles(self, direction):
         if len(direction) is 2:
-            self._angles = np.array(direction)
+            mod_theta = np.clip(direction[0],0,np.pi)
+            if direction[1] is not np.NaN:
+                mod_phi = np.mod(direction[1], np.sign(direction[1])*np.pi)\
+                            if not np.isclose(np.abs(direction[1]),np.pi,
+                                              atol=FLOAT_EPSILON)\
+                            else np.sign(direction[1])*np.pi
+            else:
+                mod_phi = np.NaN
+            if direction[1] > np.pi:
+                mod_phi = mod_phi - np.pi
+            self._angles = np.array([mod_theta, mod_phi])
             self._dir = np.array([
                 np.sin(self._angles[0])*np.cos(self._angles[1]),
                 np.sin(self._angles[0])*np.sin(self._angles[1]),
@@ -101,7 +111,7 @@ class Ray (object):
         if len(direction) is 3:
             self._dir = np.array(direction)/np.linalg.norm(direction)
             self._angles = np.array([np.arccos(self._dir[2]),
-                                     np.arctan(self._dir[1]/self._dir[0])])
+                                     np.arctan2(self._dir[1], self._dir[0])])
             # np.isclose helps remedy floating point precision errors.
             for idx, elem in enumerate(self._angles):
                 if np.isclose(elem, 0, atol=FLOAT_EPSILON):
@@ -117,7 +127,7 @@ class Ray (object):
 
     def __str__(self):
         return '{}(O:{}, D:{})'.format(
-                self.__class__.__name__, self.origin, self.dir)
+                self.__class__.__name__, self.origin, self.angles)
 
     def __repr__(self):
         return str(self.__class__)
