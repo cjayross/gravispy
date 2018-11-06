@@ -116,16 +116,18 @@ def static_spherical_grav_lens(rays, rS, metric):
         # ray.dir @ [1,0,0] = ray.dir[0] (x-value of ray.dir)
         # ray.dir is normalized so abs(ray.dir[0]) <= 1
         # the domain of theta is [-pi, pi]
-        theta = np.sign(ray.angles[1]) * np.arccos(ray.dir[0])
+        #sign = np.sign(ray.dir[0]) if ray.dir[0] != 0. else 1.
+        theta = np.arccos(ray.dir[0])
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
             # by symmetry
             yield Ray([0,0,0],[1,0,0])
             continue
         # sign of the output source angle, phi
-        sign = np.sign(theta)*np.sign(np.cos(theta))
         break_points = [0.]
+        # note: the first element represents multiplicity
+        boundaries = [(1, rO, rS)]
 
-        if hasattr(metric, 'unstable_orbits'):
+        if hasattr(metric, 'unstable_orbits') and ray.dir[0] < 0:
             break_points += list(metric.unstable_orbits)
             fsolve_res = fsolve(
                     impact_func,
@@ -142,23 +144,19 @@ def static_spherical_grav_lens(rays, rS, metric):
                 try:
                     rP = max(fsolve_res[0])
                     1/(S2(rP)*R2(rP))
+                    break_points.append(rP)
+                    if rP < rO:
+                        boundaries.append((2, rP, rO))
+                    elif rP >= rS:
+                        boundaries.append((2, rS, rP))
+                    else:
+                        # the lightray never reaches rS
+                        yield NullRay([0,0,0])
+                        continue
+
                 except ZeroDivisionError:
                     # rP is a singularity
-                    rP = None
-        boundaries = [(1, rO, rS)]
-        if rP:
-            break_points.append(rP)
-            if rP < rO:
-                # note: the first element represents multiplicity
-                boundaries.append((2, rP, rO))
-            else:
-                if rP < rS:
-                    # the lightray never reaches rS
-                    yield NullRay([0,0,0])
-                    continue
-                else:
-                    boundaries.append((2, rS, rP))
-
+                    pass
         phi = 0
         for path in boundaries:
             integral = quad(
@@ -175,7 +173,5 @@ def static_spherical_grav_lens(rays, rS, metric):
             continue
         new_ray = Ray([0,0,0],[1,0,0])
         if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
-            new_ray.rotate(
-                    sign*phi,
-                    np.cross(new_ray.dir, ray.dir))
+            new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
         yield new_ray

@@ -45,7 +45,6 @@ def test_lens(ths, rO=30):
     for th in ths:
         rays.append(Ray([rO,0,0],[np.pi/2,th]))
     rays = lensing.static_spherical_grav_lens(rays,1e+4*rO,S)
-
     return np.array([ray.angles[1] for ray in rays])
 
 def test_thin_lens(ths, rO=30):
@@ -63,14 +62,10 @@ def test_trivial_lens(ths, rO=30):
     points = [ray(geom.sphere_intersect(ray, Sphere([0,0,0],1e+4*rO))) for ray in rays]
     return np.array([np.arctan2(point[1], point[0]) for point in points])
 
-s = np.linspace(-2,2,1000)
-t = np.pi - s
-
-test_trivial = test_trivial_lens(t, 300)
-test_thin = test_thin_lens(t, 300)
-#test = test_lens(t, 300)
-
-test_trivial = [phi-np.pi if phi > 0 else phi+np.pi for phi in test_trivial]
-test_thin = [phi-np.pi if phi > 0 else phi+np.pi for phi in test_thin]
+#s = np.linspace(-2,2,1000)
+s = np.linspace(0,2*np.pi,1000)
+rays = []
+for val in np.linspace(0,2*np.pi,20):
+    rays.append(Ray([300,0,0],[np.pi/2,val]))
 
 init_printing(num_columns=150)
