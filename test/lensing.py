@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from importlib import reload
 from sympy import *
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, minimize_scalar
 from scipy.integrate import solve_ivp, romberg, quad
 import gravispy.geom as geom
 metric = geom.metric
@@ -16,9 +16,15 @@ B = metric.BarriolaVilenkin(1/3.7, [t, r, th, ph], timelike=False, lambdify_modu
 Af2 = S.conformal_factor(generator=True)
 Sf2 = S.radial_factor(generator=True)
 Rf2 = S.angular_factor(generator=True)
+DAf2 = S.D_conformal_factor(generator=True)
+DSf2 = S.D_radial_factor(generator=True)
+DRf2 = S.D_angular_factor(generator=True)
 A2 = S.conformal_factor()
 S2 = S.radial_factor()
 R2 = S.angular_factor()
+DA2 = S.D_conformal_factor()
+DS2 = S.D_radial_factor()
+DR2 = S.D_angular_factor()
 
 F2 = (R2-R2.subs({r:r0})*sin(th)**2)/(R2*S2)
 Ff2 = lambdify((r,r0,th),F2,'numpy')
@@ -45,6 +51,7 @@ def test_lens(ths, rO=30):
     for th in ths:
         rays.append(Ray([rO,0,0],[np.pi/2,th]))
     rays = lensing.static_spherical_grav_lens(rays,1e+4*rO,S)
+    #rays = lensing.static_spherical_grav_lens(rays,rO/.77,B)
     return np.array([ray.angles[1] for ray in rays])
 
 def test_thin_lens(ths, rO=30):
@@ -67,5 +74,18 @@ s = np.linspace(0,2*np.pi,1000)
 rays = []
 for val in np.linspace(0,2*np.pi,20):
     rays.append(Ray([300,0,0],[np.pi/2,val]))
+
+def delta1(rO):
+    inf = minimize_scalar(lambda r: np.sqrt(Rf2(r)/Rf2(rO)), method='bounded', bounds=(rO, 1e+4*rO))
+    if inf['fun'] <= 1:
+        return np.arcsin(inf['fun'])
+    else:
+        return np.pi/2
+def delta2(rO):
+    inf = minimize_scalar(lambda r: np.sqrt(Rf2(r)/Rf2(rO)), method='bounded', bounds=(0, rO))
+    if inf['fun'] <= 1:
+        return np.arcsin(inf['fun'])
+    else:
+        return np.pi/2
 
 init_printing(num_columns=150)

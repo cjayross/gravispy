@@ -1,7 +1,7 @@
 import numpy as np
 import itertools as it
 from sympy import Matrix, Symbol, lambdify, symbols, simplify,\
-                  zeros, ones, eye, diag, sin
+                  zeros, ones, eye, diag, sin, diff
 
 __all__ = [
         'Metric',
@@ -331,10 +331,13 @@ class SphericalSpacetime (SpacetimeMetric):
         self._conformal_factor = self.signature[0]*self._A[0,0]
         self._radial_factor =\
                 self.signature[1]\
-                * simplify(self._A[1,1]/self.conformal_factor())
+                * simplify(self._A[1,1]/self._conformal_factor)
         self._angular_factor =\
                 self.signature[2]\
-                * simplify(self._A[2,2]/self.conformal_factor())
+                * simplify(self._A[2,2]/self._conformal_factor)
+        self._Dconformal_factor = simplify(diff(self._conformal_factor,self.basis[1]))
+        self._Dradial_factor = simplify(diff(self._radial_factor,self.basis[1]))
+        self._Dangular_factor = simplify(diff(self._angular_factor,self.basis[1]))
         self._set_factor_generators()
 
     def _set_factor_generators(self):
@@ -346,6 +349,12 @@ class SphericalSpacetime (SpacetimeMetric):
         self._rfgenerator = lambdify(factor_args, self._radial_factor,
                                      modules=self._lambdify_modules)
         self._afgenerator = lambdify(factor_args, self._angular_factor,
+                                     modules=self._lambdify_modules)
+        self._Dcfgenerator = lambdify(factor_args, self._Dconformal_factor,
+                                     modules=self._lambdify_modules)
+        self._Drfgenerator = lambdify(factor_args, self._Dradial_factor,
+                                     modules=self._lambdify_modules)
+        self._Dafgenerator = lambdify(factor_args, self._Dangular_factor,
                                      modules=self._lambdify_modules)
 
     def conformal_factor(self, *args, generator=False):
@@ -381,12 +390,48 @@ class SphericalSpacetime (SpacetimeMetric):
             else:
                 return self._angular_factor
 
+    def D_conformal_factor(self, *args, generator=False):
+        if generator:
+            return self._Dcfgenerator
+        elif args:
+            return self._Dcfgenerator(*args)
+        else:
+            if self._Dconformal_factor.is_number:
+                return float(self._Dconformal_factor)
+            else:
+                return self._Dconformal_factor
+
+    def D_radial_factor(self, *args, generator=False):
+        if generator:
+            return self._Drfgenerator
+        elif args:
+            return self._Drfgenerator(*args)
+        else:
+            if self._Dradial_factor.is_number:
+                return float(self._Dradial_factor)
+            else:
+                return self._Dradial_factor
+
+    def D_angular_factor(self, *args, generator=False):
+        if generator:
+            return self._Dafgenerator
+        elif args:
+            return self._Dafgenerator(*args)
+        else:
+            if self._Dangular_factor.is_number:
+                return float(self._Dangular_factor)
+            else:
+                return self._Dangular_factor
+
     def set_conditions(self, *args):
         super(SphericalSpacetime, self).set_conditions(*args)
 
         self._conformal_factor = self._conformal_factor.subs(self.conditions)
         self._radial_factor = self._radial_factor.subs(self.conditions)
         self._angular_factor = self._angular_factor.subs(self.conditions)
+        self._Dconformal_factor = self._Dconformal_factor.subs(self.conditions)
+        self._Dradial_factor = self._Dradial_factor.subs(self.conditions)
+        self._Dangular_factor = self._Dangular_factor.subs(self.conditions)
         self._set_factor_generators()
 
 class Schwarzschild (SphericalSpacetime):

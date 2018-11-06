@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import norm
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, minimize_scalar
 from scipy.integrate import quad
 from .geom import FLOAT_EPSILON, Plane, Ray, NullRay, plane_intersect
 from .metric import SphericalSpacetime
@@ -109,29 +109,41 @@ def static_spherical_grav_lens(rays, rS, metric):
         if rS < rO:
             yield NullRay([0,0,0])
             continue
-        # impact parameter
-        rP = None
         # angle with the optical axis (0 => phi = 0)
         # optical axis = [1,0,0]
         # ray.dir @ [1,0,0] = ray.dir[0] (x-value of ray.dir)
         # ray.dir is normalized so abs(ray.dir[0]) <= 1
-        # the domain of theta is [-pi, pi]
-        #sign = np.sign(ray.dir[0]) if ray.dir[0] != 0. else 1.
+        # the domain of theta is [0, pi] with it's sign determined
+        # by the cross product of the final rotation (hopefully).
         theta = np.arccos(ray.dir[0])
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
             # by symmetry
             yield Ray([0,0,0],[1,0,0])
             continue
-        # sign of the output source angle, phi
+
+        R_inf1 = minimize_scalar(R2, method='bounded', bounds=(rO, rS))
+        if np.sin(theta)**2 > (R_inf1['fun']/R2(rO)):
+            # the light ray fails to reach rS
+            yield NullRay([0,0,0])
+            continue
+
         break_points = [0.]
         # note: the first element represents multiplicity
         boundaries = [(1, rO, rS)]
 
-        if hasattr(metric, 'unstable_orbits') and ray.dir[0] < 0:
-            break_points += list(metric.unstable_orbits)
+        if ray.dir[0] < 0:
+            if hasattr(metric, 'unstable_orbits'):
+                break_points += list(metric.unstable_orbits)
+
+            R_inf2 = minimize_scalar(R2, method='bounded', bounds=(0, rO))
+            if R_inf2['fun'] < 0 or np.sin(theta)**2 < (R_inf2['fun']/R2(rO)):
+                # the light ray fails to reach rS
+                yield NullRay([0,0,0])
+                continue
+
             fsolve_res = fsolve(
                     impact_func,
-                    metric.unstable_orbits,
+                    break_points[1:] + [rO],
                     (rO, theta),
                     full_output=True,
                     xtol=FLOAT_EPSILON,
@@ -141,22 +153,20 @@ def static_spherical_grav_lens(rays, rS, metric):
                 # solution did not converge on any positive roots
                 pass
             else:
-                try:
-                    rP = max(fsolve_res[0])
-                    1/(S2(rP)*R2(rP))
-                    break_points.append(rP)
-                    if rP < rO:
-                        boundaries.append((2, rP, rO))
-                    elif rP >= rS:
-                        boundaries.append((2, rS, rP))
-                    else:
-                        # the lightray never reaches rS
-                        yield NullRay([0,0,0])
-                        continue
-
-                except ZeroDivisionError:
+                rP = max(fsolve_res[0])
+                break_points.append(rP)
+                if (S2(rP)*R2(rP) is np.NaN
+                        or any(np.isclose(S2(rP)*R2(rP), [0., np.inf],
+                                          atol=FLOAT_EPSILON))):
                     # rP is a singularity
                     pass
+                elif rP <= rO:
+                    boundaries.append((2, rP, rO))
+                else:
+                    # TODO, investigate the possibility of this result
+                    yield NullRay([0,0,0])
+                    continue
+
         phi = 0
         for path in boundaries:
             integral = quad(
@@ -171,6 +181,7 @@ def static_spherical_grav_lens(rays, rS, metric):
         if phi is np.NaN or phi is np.Inf:
             yield NullRay([0,0,0])
             continue
+
         new_ray = Ray([0,0,0],[1,0,0])
         if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
             new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
