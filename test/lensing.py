@@ -44,7 +44,12 @@ def test_lens(ths, rO=30):
     rays = []
     for th in ths:
         rays.append(Ray([rO,0,0],[np.pi/2,th]))
+<<<<<<< HEAD
     rays = lensing.static_spherical_grav_lens(rays,1e+4*rO,S)
+=======
+    rays = lensing.static_spherical_grav_lens(rays,rO/.77,B)
+
+>>>>>>> 3d5d15aca49c876b0b2f29c93b9525bcb043ea5e
     return np.array([ray.angles[1] for ray in rays])
 
 def test_thin_lens(ths, rO=30):
