@@ -85,15 +85,7 @@ class Ray (object):
     def angles(self, direction):
         if len(direction) is 2:
             mod_theta = np.clip(direction[0],0,np.pi)
-            if direction[1] is not np.NaN:
-                mod_phi = np.mod(direction[1], np.sign(direction[1])*np.pi)\
-                            if not np.isclose(np.abs(direction[1]),np.pi,
-                                              atol=FLOAT_EPSILON)\
-                            else np.sign(direction[1])*np.pi
-            else:
-                mod_phi = np.NaN
-            if direction[1] > np.pi:
-                mod_phi = mod_phi - np.pi
+            mod_phi = (direction[1]+np.pi) % (2*np.pi) - np.pi
             self._angles = np.array([mod_theta, mod_phi])
             self._dir = np.array([
                 np.sin(self._angles[0])*np.cos(self._angles[1]),
