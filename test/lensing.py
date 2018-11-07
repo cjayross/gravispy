@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from importlib import reload
 from sympy import *
