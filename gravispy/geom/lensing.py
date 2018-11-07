@@ -1,4 +1,5 @@
 import numpy as np
+from warnings import warn
 from numpy.linalg import norm
 from scipy.optimize import fsolve, minimize_scalar
 from scipy.integrate import quad
@@ -144,7 +145,7 @@ def static_spherical_grav_lens(rays, rS, metric):
             # attempt to find an impact parameter with 5 random step factors
             # should fsolve fail for all generated factors,
             # artifacts will occur in the output over a continuous domain
-            for _ in range(5):
+            for _ in range(10):
                 fsolve_res = fsolve(
                         impact_func,
                         break_points[1:] + [rO],
@@ -157,6 +158,7 @@ def static_spherical_grav_lens(rays, rS, metric):
                     # fsolved managed to converge
                     break
 
+            # the impact parameter must be positive
             if max(fsolve_res[0]) > 0.:
                 rP = max(fsolve_res[0])
                 break_points.append(rP)
@@ -169,7 +171,8 @@ def static_spherical_grav_lens(rays, rS, metric):
                     boundaries.append((2, rP, rO))
                 else:
                     # TODO, investigate the possibility of this result
-                    raise Warning('Unresolved fsolve result encountered')
+                    warn('Unresolved fsolve result encountered',
+                         RuntimeWarning, stacklevel=2)
                     yield NullRay([0,0,0])
                     continue
 
@@ -185,7 +188,8 @@ def static_spherical_grav_lens(rays, rS, metric):
             phi += path[0] * integral[0]
 
         if phi is np.NaN or phi is np.Inf:
-            raise Warning('Unresolvable integration result')
+            warn('Unresolvable integration result',
+                 RuntimeWarning, stacklevel=2)
             yield NullRay([0,0,0])
             continue
 
