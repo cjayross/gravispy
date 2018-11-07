@@ -70,14 +70,13 @@ def schwarzschild_thin_lens(rays, metric):
 
 def static_spherical_grav_lens(rays, rS, metric):
     """
-    Work in progress...
+    Calculate the deflections by a static spherically symmetric
+    gravitational lens by an exact lensing equation.
 
     This functions assumes that the metric...
     1. must be static
     2. must be spherically symmetric
     3. is centered at the massive object
-    4. is aligned such that the optical axis coincides with the x-axis and that
-       the observer is situated at phi = 0.
 
     And assumes that the rays each have origins with respect to
     the massive object.
@@ -88,6 +87,9 @@ def static_spherical_grav_lens(rays, rS, metric):
         raise ValueError('metric must be static')
     if any(map(lambda a: a not in metric.basis, metric.args)):
         raise ValueError('metric has unset variables')
+    if rS is np.inf:
+        warn('infinite source distances may result in unstable calculations',
+             RuntimeWarning, stacklevel=2)
 
     # A(r)**2 - metric conformal factor
     # S(r)**2 - metric radial factor
@@ -108,21 +110,22 @@ def static_spherical_grav_lens(rays, rS, metric):
         # radial position of observer
         rO = norm(ray.origin)
         if rS < rO:
+            warn('unable to resolve sources closer to'
+                 'singularity than observer',
+                 RuntimeWarning, stacklevel=2)
             yield NullRay([0,0,0])
             continue
         # angle with the optical axis (0 => phi = 0)
-        # optical axis = [1,0,0]
-        # ray.dir @ [1,0,0] = ray.dir[0] (x-value of ray.dir)
-        # ray.dir is normalized so abs(ray.dir[0]) <= 1
+        # optical axis = ray.origin
         # the domain of theta is [0, pi] with it's sign determined
         # by the cross product of the final rotation (hopefully).
-        theta = np.arccos(ray.dir[0])
+        theta = np.arccos(ray.dir @ (ray.origin/rO))
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
             # by symmetry
-            yield Ray([0,0,0],[1,0,0])
+            yield Ray([0,0,0], ray.origin)
             continue
 
-        R_inf1 = minimize_scalar(R2, method='bounded', bounds=sorted([rO, rS]))
+        R_inf1 = minimize_scalar(R2, method='bounded', bounds=(rO, rS))
         if np.sin(theta)**2 > (R_inf1['fun']/R2(rO)):
             # the light ray fails to reach rS
             yield NullRay([0,0,0])
@@ -132,7 +135,7 @@ def static_spherical_grav_lens(rays, rS, metric):
         # note: the first element represents multiplicity
         boundaries = [(1, rO, rS)]
 
-        if ray.dir[0] < 0:
+        if ray.dir @ (ray.origin/rO) < 0:
             if hasattr(metric, 'unstable_orbits'):
                 break_points += list(metric.unstable_orbits)
 
@@ -171,7 +174,7 @@ def static_spherical_grav_lens(rays, rS, metric):
                     boundaries.append((2, rP, rO))
                 else:
                     # TODO, investigate the possibility of this result
-                    warn('Unresolved fsolve result encountered',
+                    warn('unresolved fsolve result encountered',
                          RuntimeWarning, stacklevel=2)
                     yield NullRay([0,0,0])
                     continue
@@ -182,18 +185,18 @@ def static_spherical_grav_lens(rays, rS, metric):
                     phi_func,
                     *path[1:],
                     (rO, theta),
-                    points=break_points,
+                    points=break_points if rS is not np.inf else None,
                     epsabs=FLOAT_EPSILON,
                     )
             phi += path[0] * integral[0]
 
         if phi is np.NaN or phi is np.Inf:
-            warn('Unresolvable integration result',
+            warn('unresolvable integration result',
                  RuntimeWarning, stacklevel=2)
             yield NullRay([0,0,0])
             continue
 
-        new_ray = Ray([0,0,0],[1,0,0])
+        new_ray = Ray([0,0,0], ray.origin)
         if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
             new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
         yield new_ray
