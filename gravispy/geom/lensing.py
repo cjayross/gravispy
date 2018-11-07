@@ -121,7 +121,7 @@ def static_spherical_grav_lens(rays, rS, metric):
             yield Ray([0,0,0],[1,0,0])
             continue
 
-        R_inf1 = minimize_scalar(R2, method='bounded', bounds=(rO, rS))
+        R_inf1 = minimize_scalar(R2, method='bounded', bounds=sorted([rO, rS]))
         if np.sin(theta)**2 > (R_inf1['fun']/R2(rO)):
             # the light ray fails to reach rS
             yield NullRay([0,0,0])
@@ -141,18 +141,23 @@ def static_spherical_grav_lens(rays, rS, metric):
                 yield NullRay([0,0,0])
                 continue
 
-            fsolve_res = fsolve(
-                    impact_func,
-                    break_points[1:] + [rO],
-                    (rO, theta),
-                    full_output=True,
-                    xtol=FLOAT_EPSILON,
-                    factor=0.1,
-                    )
-            if fsolve_res[2] is not 1 or max(fsolve_res[0]) < 0.:
-                # solution did not converge on any positive roots
-                pass
-            else:
+            # attempt to find an impact parameter with 5 random step factors
+            # should fsolve fail for all generated factors,
+            # artifacts will occur in the output over a continuous domain
+            for _ in range(5):
+                fsolve_res = fsolve(
+                        impact_func,
+                        break_points[1:] + [rO],
+                        (rO, theta),
+                        full_output=True,
+                        xtol=FLOAT_EPSILON,
+                        factor=(np.random.rand()+0.1) % 1,
+                        )
+                if fsolve_res[2] is 1:
+                    # fsolved managed to converge
+                    break
+
+            if max(fsolve_res[0]) > 0.:
                 rP = max(fsolve_res[0])
                 break_points.append(rP)
                 if (S2(rP)*R2(rP) is np.NaN
@@ -164,6 +169,7 @@ def static_spherical_grav_lens(rays, rS, metric):
                     boundaries.append((2, rP, rO))
                 else:
                     # TODO, investigate the possibility of this result
+                    raise Warning('Unresolved fsolve result encountered')
                     yield NullRay([0,0,0])
                     continue
 
@@ -179,6 +185,7 @@ def static_spherical_grav_lens(rays, rS, metric):
             phi += path[0] * integral[0]
 
         if phi is np.NaN or phi is np.Inf:
+            raise Warning('Unresolvable integration result')
             yield NullRay([0,0,0])
             continue
 

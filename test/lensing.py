@@ -41,16 +41,23 @@ P = lambda r,r0,th:\
                 / (Rf2(r)*(Rf2(r)-Rf2(r0)*np.sin(th)**2)))\
         * np.sin(th)
 
-args = (10, np.pi/4)
-vals = {r0:10, th:pi/4}
+anomaly = 3.728
+args = (30, anomaly)
+vals = {r0:30, th:anomaly}
 
 impact_param = fsolve(Ff2, S.unstable_orbits, args, factor=0.1)[1]
+bounds = [(30,30e+4),(impact_param,30)]
 
-def test_lens(ths, rO=30):
+def impact_func(r, rO, theta):
+    return (Rf2(r)-Rf2(rO)*np.sin(theta)**2) / (Sf2(r)*Rf2(r))
+
+def test_lens(ths, rO=30, rS=None):
+    if not rS:
+        rS = 1e+4*rO
     rays = []
     for th in ths:
         rays.append(Ray([rO,0,0],[np.pi/2,th]))
-    rays = lensing.static_spherical_grav_lens(rays,1e+4*rO,S)
+    rays = lensing.static_spherical_grav_lens(rays,rS,S)
     #rays = lensing.static_spherical_grav_lens(rays,rO/.77,B)
     return np.array([ray.angles[1] for ray in rays])
 
@@ -69,8 +76,8 @@ def test_trivial_lens(ths, rO=30):
     points = [ray(geom.sphere_intersect(ray, Sphere([0,0,0],1e+4*rO))) for ray in rays]
     return np.array([np.arctan2(point[1], point[0]) for point in points])
 
-#s = np.linspace(-2,2,1000)
 s = np.linspace(0,2*np.pi,1000)
+#s = np.linspace(-np.pi,np.pi,1000)
 rays = []
 for val in np.linspace(0,2*np.pi,20):
     rays.append(Ray([300,0,0],[np.pi/2,val]))
