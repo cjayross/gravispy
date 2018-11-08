@@ -68,6 +68,24 @@ def schwarzschild_thin_lens(rays, metric):
     return radial_thin_lens(Plane([0,0,0], rays[0].origin), rays,
                             schwarzschild_deflection, metric)
 
+def static_spherical_redshift(rO, rS, metric):
+    """
+    Returns the ratio of the frequencies between a photon that is emitted
+    and that is recieved through the effects of a static, spherical spacetime.
+    This is given by the conformal factor of the metric as,
+
+    \frac{\omega_O}{\omega_S} = \frac{A(r_S)}{A(r_O)}.
+    """
+    if not isinstance(metric, SphericalSpacetime):
+        raise TypeError('metric must be a spherically symmetric spacetime')
+    if not metric.assumptions['static']:
+        raise ValueError('metric must be static')
+    if any(map(lambda a: a not in metric.basis, metric.args)):
+        raise ValueError('metric has unset variables')
+
+    A2 = metric.conformal_factor(generator=True)
+    return np.sqrt(A2(rO)/A2(rS))
+
 def static_spherical_grav_lens(rays, rS, metric):
     """
     Calculate the deflections by a static spherically symmetric
@@ -91,11 +109,8 @@ def static_spherical_grav_lens(rays, rS, metric):
         warn('infinite source distances may result in unstable calculations',
              RuntimeWarning, stacklevel=2)
 
-    # S(r)**2 - metric radial factor
-    # R(r)**2 - metric angular factor
     S2 = metric.radial_factor(generator=True)
     R2 = metric.angular_factor(generator=True)
-    DR2 = metric.D_angular_factor(generator=True)
 
     # Stores infimum calculations for rays of common origins
     R_infs = dict()
