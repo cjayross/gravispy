@@ -4,7 +4,8 @@ from numpy.linalg import norm
 from scipy.optimize import fsolve, minimize_scalar
 from scipy.integrate import quad
 from .geom import FLOAT_EPSILON, Plane, Ray, NullRay, plane_intersect
-from .metric import SphericalSpacetime
+from .metric import SphericalSpacetime, BarriolaVilenkin, EllisWormhole,\
+                    Schwarzschild
 
 __all__ = [
         'snells_law',
@@ -12,6 +13,9 @@ __all__ = [
         'thin_lens',
         'radial_thin_lens',
         'schwarzschild_thin_lens',
+        'static_spherical_lens',
+        'barriola_vilenkin_lens',
+        'ellis_wormhole_lens',
         ]
 
 ### Deflection functions ###
@@ -20,6 +24,8 @@ def snells_law(theta, ref_index):
     return np.arcsin(ref_index*np.sin(theta))
 
 def schwarzschild_deflection(r, metric):
+    if not isinstance(metric, Schwarzschild):
+        raise TypeError('metric must be Schwarzschild')
     if hasattr(metric.mass, 'is_number') and not metric.mass.is_number:
         raise ValueError('Schwarzschild mass not set.')
     if r <= metric.radius: return np.NaN
@@ -86,7 +92,7 @@ def static_spherical_redshift(rO, rS, metric):
     A2 = metric.conformal_factor(generator=True)
     return np.sqrt(A2(rO)/A2(rS))
 
-def static_spherical_grav_lens(rays, rS, metric):
+def static_spherical_lens(rays, rS, metric):
     """
     Calculate the deflections by a static spherically symmetric
     gravitational lens by an exact lensing equation.
@@ -228,6 +234,67 @@ def static_spherical_grav_lens(rays, rS, metric):
             continue
 
         new_ray = Ray([0,0,0], ray.origin)
+        if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
+            new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
+        yield new_ray
+
+def barriola_vilenkin_lens(rays, rS, metric):
+    if not isinstance(metric, BarriolaVilenkin):
+        raise TypeError('metric must describe a Barriola-Vilenkin spacetime')
+    if any(map(lambda a: a not in metric.basis, metric.args)):
+        raise ValueError('metric has unset variables')
+
+    for ray in rays:
+        rO = norm(ray.origin)
+        theta = np.arccos(ray.dir @ (ray.origin/rO))
+        if rS < rO:
+            warn('unable to resolve sources closer to'
+                 'singularity than observer',
+                 RuntimeWarning, stacklevel=2)
+            yield NullRay([0,0,0])
+            continue
+
+        phi = (theta - np.arcsin(rO*np.sin(theta)/rS))/metric.k
+
+        new_ray = Ray([0,0,0], ray.origin)
+        if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
+            new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
+        yield new_ray
+
+def ellis_wormhole_lens(rays, rS, metric, orient=1.):
+    """
+    Work in progres...
+    """
+    if not isinstance(metric, EllisWormhole):
+        raise TypeError('metric must describe an Ellis wormhole')
+    if any(map(lambda a: a not in metric.basis, metric.args)):
+        raise ValueError('metric has unset variables')
+
+    def phi_func(r, rO, theta):
+        return np.sqrt((rO**2+metric.a**2)
+                       / ((r**2+metric.a**2)
+                         * (r**2
+                            + metric.a**2*np.cos(theta)**2
+                            - rO**2*np.sin(theta)**2)))\
+               * np.sin(theta)
+
+    for ray in rays:
+        rO = orient*norm(ray.origin)
+        theta = np.arccos(ray.dir @ (ray.origin/rO))
+
+        if (np.sin(theta)**2 >= metric.a**2 / (rO**2+metric.a**2)
+                or np.abs(theta) >= np.pi/2):
+            yield NullRay([0,0,0])
+            continue
+
+        phi = quad(
+                phi_func,
+                rO, rS,
+                (rO, theta),
+                epsabs=FLOAT_EPSILON,
+                )[0]
+
+        new_ray = Ray([0,0,0], orient*ray.origin)
         if not np.isclose(phi, 0., atol=FLOAT_EPSILON):
             new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
         yield new_ray

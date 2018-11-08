@@ -12,8 +12,11 @@ Ray = geom.Ray
 Plane = geom.Plane
 Sphere = geom.Sphere
 t, r, th, ph, r0 = symbols('t r theta phi r0', positive=True)
+
 S = metric.Schwarzschild(1, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
 B = metric.BarriolaVilenkin(1/3.7, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
+E = metric.EllisWormhole(1, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
+
 Af2 = S.conformal_factor(generator=True)
 Sf2 = S.radial_factor(generator=True)
 Rf2 = S.angular_factor(generator=True)
@@ -58,8 +61,28 @@ def test_lens(ths, rO=30, rS=None):
     rays = []
     for th in ths:
         rays.append(Ray([rO,0,0],[np.pi/2,th]))
-    rays = lensing.static_spherical_grav_lens(rays,rS,S)
-    #rays = lensing.static_spherical_grav_lens(rays,rO/.77,B)
+    rays = lensing.static_spherical_lens(rays,rS,S)
+    return np.array([ray.angles[1] for ray in rays])
+
+def test_bv_lens(ths, rO=30, rS=None, general=False):
+    if not rS:
+        rS = rO/.77
+    rays = []
+    for th in ths:
+        rays.append(Ray([rO,0,0],[np.pi/2,th]))
+    if not general:
+        rays = lensing.barriola_vilenkin_lens(rays,rS,B)
+    else:
+        rays = lensing.static_spherical_lens(rays,rS,B)
+    return np.array([ray.angles[1] for ray in rays])
+
+def test_ew_lens(ths, rO=30, rS=None):
+    if not rS:
+        rS = 1e+4*rO
+    rays = []
+    for th in ths:
+        rays.append(Ray([rO,0,0],[np.pi/2,th]))
+    rays = lensing.ellis_wormhole_lens(rays,rS,E,orient=np.sign(rO))
     return np.array([ray.angles[1] for ray in rays])
 
 def test_thin_lens(ths, rO=30):

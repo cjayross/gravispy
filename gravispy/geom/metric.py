@@ -496,6 +496,17 @@ class Schwarzschild (SphericalSpacetime):
         return np.array([3*self.mass, 6*self.mass])
 
 class BarriolaVilenkin (SphericalSpacetime):
+    """
+    The metric of a monopole. The deflection angle of lightrays due to this
+    spacetime is a constant that does not depend on the impact parameter.
+
+    The metric is defined (in the default timelike signature):
+    Matrix([
+    [ 1,  0,          0,                        0],
+    [ 0, -1,          0,                        0],
+    [ 0,  0, -k**2*r**2,                        0],
+    [ 0,  0,          0, -k**2*r**2*sin(theta)**2]])
+    """
     def __init__(self, k=Symbol('k', real=True),
                  coords=symbols('t r theta phi', real=True),
                  timelike=True, **kwargs):
@@ -511,7 +522,7 @@ class BarriolaVilenkin (SphericalSpacetime):
         self.assumptions['static'] = True
 
     def set_conditions(self, *args):
-        super(Schwarzschild, self).set_conditions(*args)
+        super(BarriolaVilenkin, self).set_conditions(*args)
 
         if (hasattr(self._k, 'is_Symbol') and self._k.is_Symbol
                 and self._k not in self._vars):
@@ -520,3 +531,39 @@ class BarriolaVilenkin (SphericalSpacetime):
     @property
     def k(self):
         return self._k
+
+class EllisWormhole (SphericalSpacetime):
+    """
+    The metric of an Ellis wormhole.
+
+    The metric is defined (in the default timelike signature):
+    Matrix([
+    [ 1,  0,              0,                            0],
+    [ 0, -1,              0,                            0],
+    [ 0,  0, -(r**2 + a**2),                            0],
+    [ 0,  0,              0, -(r**2 + a**2)*sin(theta)**2]])
+    """
+    def __init__(self, a=Symbol('a', real=True),
+                 coords=symbols('t r theta phi', real=True),
+                 timelike=True, **kwargs):
+        self._a = a
+        if len(coords) is not 4:
+            raise ValueError('Invalid number of coordinates')
+        t, r, th, ph = coords
+
+        super(EllisWormhole, self).__init__(
+                coords, diag(1,1,r**2+self._a**2,(r**2+self._a**2)*sin(th)**2),
+                self._a, timelike=timelike, **kwargs)
+
+        self.assumptions['static'] = True
+
+    def set_conditions(self, *args):
+        super(EllisWormhole, self).set_conditions(*args)
+
+        if (hasattr(self._a, 'is_Symbol') and self._a.is_Symbol
+                and self._a not in self._vars):
+            self._a = self.vars[str(self._a)]
+
+    @property
+    def a(self):
+        return self._a
