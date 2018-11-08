@@ -335,9 +335,13 @@ class SphericalSpacetime (SpacetimeMetric):
         self._angular_factor =\
                 self.signature[2]\
                 * simplify(self._A[2,2]/self._conformal_factor)
-        self._Dconformal_factor = simplify(diff(self._conformal_factor,self.basis[1]))
-        self._Dradial_factor = simplify(diff(self._radial_factor,self.basis[1]))
-        self._Dangular_factor = simplify(diff(self._angular_factor,self.basis[1]))
+        self._Dconformal_factor =\
+                simplify(diff(self._conformal_factor,self.basis[1]))
+        self._Dradial_factor =\
+                simplify(diff(self._radial_factor,self.basis[1]))
+        self._Dangular_factor =\
+                simplify(diff(self._angular_factor,self.basis[1]))
+
         self._set_factor_generators()
 
     def _set_factor_generators(self):

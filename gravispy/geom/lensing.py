@@ -182,7 +182,7 @@ def static_spherical_lens(rays, rS, metric):
                 yield NullRay([0,0,0])
                 continue
 
-            # attempt to find an impact parameter with 5 random step factors
+            # attempt to find an impact parameter with 10 random step factors
             # should fsolve fail for all generated factors,
             # artifacts will occur in the output over a continuous domain
             for _ in range(10):

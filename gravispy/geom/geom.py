@@ -210,6 +210,9 @@ def sphere_intersect(ray, sphere):
     return np.NaN
 
 def rotate3D(angle, axis=[0,0,1]):
+    """
+    Returns the rotation matrix about a given axis.
+    """
     axis = np.array(axis)/norm(axis)
     return (np.cos(angle)*np.eye(3)
             + np.sin(angle)*np.array([
