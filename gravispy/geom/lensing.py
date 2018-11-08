@@ -40,6 +40,8 @@ def schwarzschild_deflection(r, metric):
 ### Lensing functions ###
 
 def thin_lens(angles, rO, rS, deflection_function, *args):
+    if isinstance(angles, (float, int)):
+        angles = np.array([angles])
     plane = Plane([0,0,0], [rO,0,0])
     sphere = Sphere([0,0,0], rS)
     for theta in angles:
@@ -64,6 +66,8 @@ def trivial_lens(angles, rO, rS):
     return thin_lens(angles, rO, rS, trivial_deflection)
 
 def radial_thin_lens(angles, rO, rS, deflection_function, *args):
+    if isinstance(angles, (float, int)):
+        angles = np.array([angles])
     plane = Plane([0,0,0], [rO,0,0])
     sphere = Sphere([0,0,0], rS)
     for theta in angles:
@@ -135,6 +139,8 @@ def static_spherical_lens(angles, rO, rS, metric):
              'singularity than observer',
              RuntimeWarning, stacklevel=2)
         return len(angles)*[np.NaN]
+    if isinstance(angles, (float, int)):
+        angles = np.array([angles])
 
     angles = unwrap(angles)
     S2 = metric.radial_factor(generator=True)
@@ -173,13 +179,13 @@ def static_spherical_lens(angles, rO, rS, metric):
         boundaries = [(1, rO, rS)]
 
         if np.abs(theta) > np.pi/2:
-            if hasattr(metric, 'unstable_orbits'):
-                break_points += list(metric.unstable_orbits)
-
             if R_inf2 < 0 or np.sin(theta)**2 < (R_inf2/R2(rO)):
                 # the light ray fails to reach rS
                 yield np.NaN
                 continue
+
+            if hasattr(metric, 'unstable_orbits'):
+                break_points += list(metric.unstable_orbits)
 
             # attempt to find an impact parameter with 10 random step factors
             # should fsolve fail for all generated factors,
@@ -244,6 +250,8 @@ def barriola_vilenkin_lens(angles, rO, rS, metric):
              'singularity than observer',
              RuntimeWarning, stacklevel=2)
         return len(angles)*[np.NaN]
+    if isinstance(angles, (float, int)):
+        angles = np.array([angles])
 
     angles = unwrap(angles)
 
@@ -258,15 +266,17 @@ def ellis_wormhole_lens(angles, rO, rS, metric):
         raise TypeError('metric must describe an Ellis wormhole')
     if any(map(lambda a: a not in metric.basis, metric.args)):
         raise ValueError('metric has unset variables')
+    if isinstance(angles, (float, int)):
+        angles = np.array([angles])
 
     angles = unwrap(angles)
 
     def phi_func(r, rO, theta):
         return np.sqrt((rO**2+metric.a**2)
                        / ((r**2+metric.a**2)
-                         * (r**2
-                            + metric.a**2*np.cos(theta)**2
-                            - rO**2*np.sin(theta)**2)))\
+                          * (r**2
+                             + metric.a**2*np.cos(theta)**2
+                             - rO**2*np.sin(theta)**2)))\
                * np.sin(theta)
 
     for theta in angles:
