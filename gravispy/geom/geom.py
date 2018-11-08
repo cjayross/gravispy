@@ -9,6 +9,7 @@ __all__ = [
         'NullRay',
         'Plane',
         'Sphere',
+        'unwrap',
         'plane_intersect',
         'sphere_intersect',
         'rotate3D',
@@ -85,7 +86,7 @@ class Ray (object):
     def angles(self, direction):
         if len(direction) is 2:
             mod_theta = np.clip(direction[0],0,np.pi)
-            mod_phi = (direction[1]+np.pi) % (2*np.pi) - np.pi
+            mod_phi = unwrap(direction[1])
             self._angles = np.array([mod_theta, mod_phi])
             self._dir = np.array([
                 np.sin(self._angles[0])*np.cos(self._angles[1]),
@@ -181,6 +182,15 @@ class Sphere (object):
 
     def __repr__(self):
         return str(self.__class__)
+
+def unwrap(angles):
+    """
+    Unwrap an array of angles in radians by converting each element
+    to their 2*pi complement (the interval [-pi,pi]).
+    """
+    if isinstance(angles, (list,tuple)):
+        angles = np.array(angles)
+    return np.mod(angles+np.pi,2*np.pi)-np.pi
 
 def plane_intersect(plane, ray):
     """
