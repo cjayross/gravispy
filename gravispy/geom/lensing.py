@@ -202,24 +202,22 @@ def static_spherical_lens(angles, rO, rS, metric):
                 if fsolve_res[2] is 1:
                     # fsolved managed to converge
                     break
+            else: # for-else condition (only executes if loop completes)
+                warn('unresolved fsolve result encountered',
+                     RuntimeWarning, stacklevel=2)
+                yield np.NaN
+                continue
 
             # the impact parameter must be positive
-            if max(fsolve_res[0]) > 0.:
-                rP = max(fsolve_res[0])
+            rP = max(fsolve_res[0])
+            if rP > 0.:
                 break_points.append(rP)
-                if (S2(rP)*R2(rP) is np.NaN
+                if not (S2(rP)*R2(rP) is np.NaN
                         or any(np.isclose(S2(rP)*R2(rP), [0., np.inf],
                                           atol=FLOAT_EPSILON))):
-                    # rP is a singularity
-                    pass
-                elif rP <= rO:
+                    # TODO: consider whether cases where
+                    # rP > rO should be considered
                     boundaries.append((2, rP, rO))
-                else:
-                    # TODO, investigate the possibility of this result
-                    warn('unresolved fsolve result encountered',
-                         RuntimeWarning, stacklevel=2)
-                    yield np.NaN
-                    continue
 
         phi = 0
         for path in boundaries:
