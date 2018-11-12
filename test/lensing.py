@@ -1,8 +1,8 @@
 import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
+import sympy as sym
 from importlib import reload
-from sympy import *
 from scipy.optimize import fsolve, minimize_scalar
 from scipy.integrate import solve_ivp, romberg, quad
 import gravispy.geom as geom
@@ -11,7 +11,7 @@ lensing = geom.lensing
 Ray = geom.Ray
 Plane = geom.Plane
 Sphere = geom.Sphere
-t, r, th, ph, r0 = symbols('t r theta phi r0', positive=True)
+t, r, th, ph, r0 = sym.symbols('t r theta phi r0', positive=True)
 s = np.linspace(0,2*np.pi,1000)
 
 S = metric.Schwarzschild(1, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
@@ -71,4 +71,4 @@ def delta2(rO):
     else:
         return np.pi/2
 
-init_printing(num_columns=150)
+sym.init_printing(num_columns=150)

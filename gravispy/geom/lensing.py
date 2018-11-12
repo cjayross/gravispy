@@ -1,4 +1,5 @@
 import numpy as np
+import multiprocess as mp
 from warnings import warn
 from numpy.linalg import norm
 from scipy.optimize import fsolve, minimize_scalar
@@ -142,6 +143,18 @@ def static_spherical_lens(angles, rO, rS, metric):
     if isinstance(angles, (float, int)):
         angles = np.array([angles])
 
+    def subdivide(a, b):
+        interval = np.linspace(a, b, mp.cpu_count()+1)
+        return list(zip(interval[:-1], interval[1:]))
+
+    def phi_func(r, rO, theta):
+        return np.sqrt(R2(rO)*S2(r)
+                       / (R2(r)*(R2(r)-R2(rO)*np.sin(theta)**2)))\
+               * np.sin(theta)
+
+    def impact_func(r, rO, theta):
+        return (R2(r)-R2(rO)*np.sin(theta)**2) / (S2(r)*R2(r))
+
     angles = unwrap(angles)
     S2 = metric.radial_factor(generator=True)
     R2 = metric.angular_factor(generator=True)
@@ -154,14 +167,6 @@ def static_spherical_lens(angles, rO, rS, metric):
             R2,
             method='bounded',
             bounds=(0, rO))['fun']
-
-    def impact_func(r, rO, theta):
-        return (R2(r)-R2(rO)*np.sin(theta)**2) / (S2(r)*R2(r))
-
-    def phi_func(r, rO, theta):
-        return np.sqrt(R2(rO)*S2(r)
-                       / (R2(r)*(R2(r)-R2(rO)*np.sin(theta)**2)))\
-               * np.sin(theta)
 
     for theta in angles:
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
@@ -176,7 +181,7 @@ def static_spherical_lens(angles, rO, rS, metric):
 
         break_points = [0.]
         # note: the first element represents multiplicity
-        boundaries = [(1, rO, rS)]
+        boundaries = [(1, subdivide(rO, rS))]
 
         if np.abs(theta) > np.pi/2:
             if R_inf2 < 0 or np.sin(theta)**2 < (R_inf2/R2(rO)):
@@ -217,18 +222,17 @@ def static_spherical_lens(angles, rO, rS, metric):
                                           atol=FLOAT_EPSILON))):
                     # TODO: consider whether cases where
                     # rP > rO should be considered
-                    boundaries.append((2, rP, rO))
+                    boundaries.append((2, subdivide(rP, rO)))
 
         phi = 0
-        for path in boundaries:
-            integral = quad(
-                    phi_func,
-                    *path[1:],
-                    (rO, theta),
-                    points=break_points if rS is not np.inf else None,
-                    epsabs=FLOAT_EPSILON,
-                    )
-            phi += path[0] * integral[0]
+        with mp.Pool(processes=mp.cpu_count()) as integration_pool:
+            for path in boundaries:
+                args = [(phi_func, *interval, (rO, theta), False,
+                         FLOAT_EPSILON, FLOAT_EPSILON, 50,
+                         break_points if rS is not np.inf else None)
+                            for interval in path[1]]
+                integrals = integration_pool.starmap_async(quad, args)
+                phi += path[0] * sum(integrals.get())
 
         if phi in (np.NaN, np.Inf):
             warn('unresolvable integration result',
