@@ -1,7 +1,7 @@
 import numpy as np
 from warnings import warn
 from numpy.linalg import norm
-from scipy.optimize import fsolve, minimize_scalar
+from scipy.optimize import brentq, minimize_scalar
 from scipy.integrate import quad
 from .geom import FLOAT_EPSILON, Plane, Sphere, Ray, NullRay,\
                   unwrap, plane_intersect, sphere_intersect
@@ -155,10 +155,10 @@ def static_spherical_lens(angles, rO, rS, metric):
             method='bounded',
             bounds=(0, rO))['fun']
 
-    def impact_func(r, rO, theta):
+    def impact_func(r, theta):
         return (R2(r)-R2(rO)*np.sin(theta)**2) / (S2(r)*R2(r))
 
-    def phi_func(r, rO, theta):
+    def phi_func(r, theta):
         return np.sqrt(R2(rO)*S2(r)
                        / (R2(r)*(R2(r)-R2(rO)*np.sin(theta)**2)))\
                * np.sin(theta)
@@ -175,6 +175,7 @@ def static_spherical_lens(angles, rO, rS, metric):
             continue
 
         break_points = [0.]
+        bounds = [FLOAT_EPSILON, rO]
         # note: the first element represents multiplicity
         boundaries = [(1, rO, rS)]
 
@@ -186,45 +187,35 @@ def static_spherical_lens(angles, rO, rS, metric):
 
             if hasattr(metric, 'unstable_orbits'):
                 break_points += list(metric.unstable_orbits)
+                bounds[0] = min(metric.unstable_orbits)
 
-            # attempt to find an impact parameter with 10 random step factors
-            # should fsolve fail for all generated factors,
-            # artifacts will occur in the output over a continuous domain
-            for _ in range(10):
-                fsolve_res = fsolve(
-                        impact_func,
-                        break_points[1:] + [rO],
-                        (rO, theta),
-                        full_output=True,
-                        xtol=FLOAT_EPSILON,
-                        factor=(np.random.rand()+0.1) % 1,
-                        )
-                if fsolve_res[2] is 1:
-                    # fsolved managed to converge
-                    break
-            else: # for-else condition (only executes if loop completes)
-                warn('unresolved fsolve result encountered',
+            res = brentq(impact_func, *bounds, args=(theta,), full_output=True)
+            if not res[1].converged:
+                warn('unresolved brentq result encountered',
                      RuntimeWarning, stacklevel=2)
                 yield np.NaN
                 continue
 
-            # the impact parameter must be positive
-            rP = max(fsolve_res[0])
-            if rP > 0.:
-                break_points.append(rP)
+            rP = res[0]
+            break_points.append(rP)
+            try:
                 if not (S2(rP)*R2(rP) is np.NaN
                         or any(np.isclose(S2(rP)*R2(rP), [0., np.inf],
                                           atol=FLOAT_EPSILON))):
                     # TODO: consider whether cases where
                     # rP > rO should be considered
                     boundaries.append((2, rP, rO))
+            except ZeroDivisionError:
+                warn('brentq resulted in singularity',
+                     RuntimeWarning, stacklevel=2)
+                pass
 
         phi = 0
         for path in boundaries:
             integral = quad(
                     phi_func,
                     *path[1:],
-                    (rO, theta),
+                    (theta,),
                     points=break_points if rS is not np.inf else None,
                     epsabs=FLOAT_EPSILON,
                     )
