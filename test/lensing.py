@@ -3,7 +3,7 @@ from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from importlib import reload
 from sympy import *
-from scipy.optimize import fsolve, minimize_scalar
+from scipy.optimize import brentq, minimize_scalar
 from scipy.integrate import solve_ivp, romberg, quad
 import gravispy.geom as geom
 metric = geom.metric
@@ -34,6 +34,11 @@ def T_lens(ths, rO=30, rS=None):
     if not rS:
         rS = 1e+4*rO
     return np.fromiter(lensing.static_spherical_lens(ths, rO, rS, S), np.float32)
+
+def T_sc_lens(ths, rO=30, rS=None):
+    if not rS:
+        rS = 1e+4*rO
+    return np.fromiter(lensing.schwarzschild_lens(ths, rO, rS, S), np.float32)
 
 def T_bv_lens(ths, rO=30, rS=None, general=False):
     if not rS:

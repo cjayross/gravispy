@@ -154,14 +154,16 @@ def static_spherical_lens(angles, rO, rS, metric):
             R2,
             method='bounded',
             bounds=(0, rO))['fun']
+    delta1 = R_inf1/R2(rO)
+    delta2 = R_inf2/R2(rO)
 
     def impact_func(r, theta):
         return (R2(r)-R2(rO)*np.sin(theta)**2) / (S2(r)*R2(r))
 
     def phi_func(r, theta):
-        return np.sqrt(R2(rO)*S2(r)
-                       / (R2(r)*(R2(r)-R2(rO)*np.sin(theta)**2)))\
-               * np.sin(theta)
+        num = R2(rO)*S2(r)
+        den = R2(r) * (R2(r)-R2(rO)*np.sin(theta)**2)
+        return np.sin(theta) * np.sqrt(num/den)
 
     for theta in angles:
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
@@ -169,7 +171,7 @@ def static_spherical_lens(angles, rO, rS, metric):
             yield 0.
             continue
 
-        if np.sin(theta)**2 > (R_inf1/R2(rO)):
+        if np.sin(theta)**2 > delta1:
             # the light ray fails to reach rS
             yield np.NaN
             continue
@@ -180,7 +182,7 @@ def static_spherical_lens(angles, rO, rS, metric):
         boundaries = [(1, rO, rS)]
 
         if np.abs(theta) > np.pi/2:
-            if R_inf2 < 0 or np.sin(theta)**2 < (R_inf2/R2(rO)):
+            if R_inf2 < 0 or np.sin(theta)**2 < delta2:
                 # the light ray fails to reach rS
                 yield np.NaN
                 continue
@@ -215,7 +217,7 @@ def static_spherical_lens(angles, rO, rS, metric):
             integral = quad(
                     phi_func,
                     *path[1:],
-                    (theta,),
+                    args=(theta,),
                     points=break_points if rS is not np.inf else None,
                     epsabs=FLOAT_EPSILON,
                     )
@@ -228,6 +230,117 @@ def static_spherical_lens(angles, rO, rS, metric):
             continue
 
         yield unwrap(phi)
+
+def schwarzschild_lens(angles, rO, rS, metric):
+    """
+    Work in progress. Currently static_spherical_lens is more robust.
+    """
+    if not isinstance(metric, Schwarzschild):
+        raise TypeError('metric must describe a Schwarzschild spacetime')
+    if any(map(lambda a: a not in metric.basis, metric.args)):
+        raise ValueError('metric has unset variables')
+    if rS < rO:
+        warn('unable to resolve sources closer to'
+             'singularity than observer',
+             RuntimeWarning, stacklevel=2)
+        return len(angles)*[np.NaN]
+    if isinstance(angles, (float, int)):
+        angles = np.array([angles])
+
+    angles = unwrap(angles)
+    lO = 1/np.sqrt(2)/rO
+    lS = 1/np.sqrt(2)/rS
+    lR = 1/np.sqrt(2)/metric.radius
+    unstable_orbits = 1/np.sqrt(2)/np.array(metric.unstable_orbits)
+    break_points = [lR, *unstable_orbits]
+    S2 = metric.radial_factor(generator=True)
+    R2 = metric.angular_factor(generator=True)
+    # used to identify possible angles
+    R_inf1 = minimize_scalar(
+            R2,
+            method='bounded',
+            bounds=(rO, rS))['fun']
+    R_inf2 = minimize_scalar(
+            R2,
+            method='bounded',
+            bounds=(0, rO))['fun']
+    delta1 = R_inf1/R2(rO)
+    delta2 = R_inf2/R2(rO)
+
+    def impact_func(lP, theta):
+        return np.sin(theta)**2*lP**2*(1-lP/lR) - lO**2*(1-lO/lR)
+
+    def phi_func1(q, lP):
+        q1 = 2*lP*(1-lP/lR)
+        q2 = 1 - lP/unstable_orbits[1]
+        q3 = 1/lR
+        return 1/np.sqrt(q1*q - q2*q**2 - q3*q**3)
+
+    def phi_func2(l, lP):
+        L1 = lP**2*(1-lP/lR)
+        L2 = l**2*(1-l/lR)
+        return 1/np.sqrt(L1-L2)
+
+    def phi_func3(r, theta):
+        num = R2(rO)*S2(r)
+        den = R2(r) * (R2(r)-R2(rO)*np.sin(theta)**2)
+        return np.sin(theta) * np.sqrt(num/den)
+
+    for theta in angles:
+        if np.isclose(theta, 0., atol=FLOAT_EPSILON):
+            # by symmetry
+            yield 0.
+            continue
+
+        if np.sin(theta)**2 > delta1:
+            # the light ray fails to reach rS
+            yield np.NaN
+            continue
+
+        if np.abs(theta) > np.pi/2:
+            if R_inf2 < 0 or np.sin(theta)**2 < delta2:
+                # the light ray fails to reach rS
+                yield np.NaN
+                continue
+
+            res = brentq(impact_func, 0, unstable_orbits[0],
+                         args=(theta,), full_output=True)
+            if not res[1].converged:
+                warn('unresolved brentq result encountered',
+                     RuntimeWarning, stacklevel=2)
+                yield np.NaN
+                continue
+
+            lP = res[0]
+            if lP != lR:
+                phi = 2*quad(
+                        phi_func1,
+                        0, lP-lO,
+                        args=(lP,),
+                        points=[lR, *unstable_orbits],
+                        epsabs=FLOAT_EPSILON,
+                        )[0]
+                phi += quad(
+                        phi_func2,
+                        lS, lO,
+                        args=(lP,),
+                        points=[lR, *unstable_orbits],
+                        epsabs=FLOAT_EPSILON,
+                        )[0]
+                yield unwrap(np.sign(theta)*phi)
+            else:
+                warn('brentq resulted in singularity',
+                     RuntimeWarning, stacklevel=2)
+                yield np.NaN
+        else:
+            phi = quad(
+                    phi_func3,
+                    rO, rS,
+                    args=(theta,),
+                    points=[metric.radius, *metric.unstable_orbits],
+                    epsabs=FLOAT_EPSILON,
+                    )[0]
+            yield unwrap(phi)
 
 def barriola_vilenkin_lens(angles, rO, rS, metric):
     if not isinstance(metric, BarriolaVilenkin):
@@ -243,13 +356,12 @@ def barriola_vilenkin_lens(angles, rO, rS, metric):
         angles = np.array([angles])
 
     angles = unwrap(angles)
-
     for theta in angles:
         yield unwrap((theta - np.arcsin(rO*np.sin(theta)/rS))/metric.k)
 
 def ellis_wormhole_lens(angles, rO, rS, metric):
     """
-    Work in progres...
+    Currently broken.
     """
     if not isinstance(metric, EllisWormhole):
         raise TypeError('metric must describe an Ellis wormhole')
