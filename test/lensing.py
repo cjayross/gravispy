@@ -13,6 +13,7 @@ Plane = geom.Plane
 Sphere = geom.Sphere
 t, r, th, ph, r0 = symbols('t r theta phi r0', positive=True)
 s = np.linspace(0,2*np.pi,1000)
+args = (30, 3*np.pi/4)
 
 S = metric.Schwarzschild(1, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
 B = metric.BarriolaVilenkin(1/3.7, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
@@ -21,7 +22,8 @@ E = metric.EllisWormhole(1, [t, r, th, ph], timelike=False, lambdify_modules='nu
 Af2 = S.conformal_factor(generator=True)
 Sf2 = S.radial_factor(generator=True)
 Rf2 = S.angular_factor(generator=True)
-
+S2 = S.radial_factor()
+R2 = S.angular_factor()
 P = lambda r,r0,th:\
         np.sqrt(Rf2(r0)*Sf2(r)
                 / (Rf2(r)*(Rf2(r)-Rf2(r0)*np.sin(th)**2)))\
@@ -29,6 +31,11 @@ P = lambda r,r0,th:\
 
 def T_impact_func(r, rO, theta):
     return (Rf2(r)-Rf2(rO)*np.sin(theta)**2) / (Sf2(r)*Rf2(r))
+
+subR = {r:r0}
+subA = dict(zip((r0, th), args))
+impact = R2-R2.subs(subR)*sin(th)**2
+rP = brentq(T_impact_func, S.unstable_orbits[0], args[0], args)
 
 def T_lens(ths, rO=30, rS=None):
     if not rS:
