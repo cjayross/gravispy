@@ -233,7 +233,8 @@ def static_spherical_lens(angles, rO, rS, metric):
 
 def schwarzschild_lens(angles, rO, rS, metric):
     """
-    Work in progress. Currently static_spherical_lens is more robust.
+    Faster calculation of Schwarzschild lensing.
+    Currently static_spherical_lens is more robust.
     """
     if not isinstance(metric, Schwarzschild):
         raise TypeError('metric must describe a Schwarzschild spacetime')
@@ -281,10 +282,10 @@ def schwarzschild_lens(angles, rO, rS, metric):
         L2 = l**2*(1-l/lR)
         return 1/np.sqrt(L1-L2)
 
-    def phi_func3(r, theta):
-        num = R2(rO)*S2(r)
-        den = R2(r) * (R2(r)-R2(rO)*np.sin(theta)**2)
-        return np.sin(theta) * np.sqrt(num/den)
+    def phi_func3(l, theta):
+        L1 = lO**2*(1-lO/lR)
+        L2 = l**2*(1-l/lR)*np.sin(theta)**2
+        return np.sin(theta) / np.sqrt(L1-L2)
 
     for theta in angles:
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
@@ -317,14 +318,14 @@ def schwarzschild_lens(angles, rO, rS, metric):
                         phi_func1,
                         0, lP-lO,
                         args=(lP,),
-                        points=[lR, *unstable_orbits],
+                        #points=[lR, *unstable_orbits],
                         epsabs=FLOAT_EPSILON,
                         )[0]
                 phi += quad(
                         phi_func2,
                         lS, lO,
                         args=(lP,),
-                        points=[lR, *unstable_orbits],
+                        #points=[lR, *unstable_orbits],
                         epsabs=FLOAT_EPSILON,
                         )[0]
                 yield unwrap(np.sign(theta)*phi)
@@ -335,9 +336,9 @@ def schwarzschild_lens(angles, rO, rS, metric):
         else:
             phi = quad(
                     phi_func3,
-                    rO, rS,
+                    lS, lO,
                     args=(theta,),
-                    points=[metric.radius, *metric.unstable_orbits],
+                    points=[lR, *unstable_orbits],
                     epsabs=FLOAT_EPSILON,
                     )[0]
             yield unwrap(phi)
