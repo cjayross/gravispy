@@ -11,31 +11,42 @@ lensing = geom.lensing
 Ray = geom.Ray
 Plane = geom.Plane
 Sphere = geom.Sphere
-t, r, th, ph, r0 = symbols('t r theta phi r0', positive=True)
+t, r, th, ph, r0, l0, l_P, l, M = symbols('t r theta phi r0 l0 l_P l M', positive=True)
 s = np.linspace(0,2*np.pi,1000)
 args = (30, 3*np.pi/4)
+rO, theta = args
+l_R = 1/2/sqrt(2)
 
 S = metric.Schwarzschild(1, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
+SM = metric.Schwarzschild(M, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
 B = metric.BarriolaVilenkin(1/3.7, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
 E = metric.EllisWormhole(1, [t, r, th, ph], timelike=False, lambdify_modules='numpy')
 
-Af2 = S.conformal_factor(generator=True)
 Sf2 = S.radial_factor(generator=True)
 Rf2 = S.angular_factor(generator=True)
-S2 = S.radial_factor()
-R2 = S.angular_factor()
-P = lambda r,r0,th:\
-        np.sqrt(Rf2(r0)*Sf2(r)
-                / (Rf2(r)*(Rf2(r)-Rf2(r0)*np.sin(th)**2)))\
-        * np.sin(th)
+S2 = SM.radial_factor()
+R2 = SM.angular_factor()
+P = sqrt(R2.subs({r:r0})*S2 / (R2*(R2-R2.subs({r:r0})*sin(th)**2))) * sin(th)
+Pf = lambdify(r, P.subs({r0:30, th:theta, M:1}))
 
 def T_impact_func(r, rO, theta):
     return (Rf2(r)-Rf2(rO)*np.sin(theta)**2) / (Sf2(r)*Rf2(r))
 
-subR = {r:r0}
-subA = dict(zip((r0, th), args))
-impact = R2-R2.subs(subR)*sin(th)**2
-rP = brentq(T_impact_func, S.unstable_orbits[0], args[0], args)
+r_P = brentq(T_impact_func, 3, rO, args=args)
+l_P = 1/np.sqrt(2)/r_P
+q1 = 2*l_P*(1-2*np.sqrt(2)*l_P)
+q2 = 1-6*np.sqrt(2)*l_P
+q3 = 2*np.sqrt(2)
+T_P = lambda q: np.sqrt(2)*(l_P-q)**2/np.sqrt(q1*q-q2*q**2-q3*q**3)
+
+def T_Pf(r):
+    l = 1/np.sqrt(2)/r
+    return T_P(l_P-l)
+
+def T_phi_func(rval, rO, theta):
+    num = Rf2(rO)*Sf2(rval)
+    den = Rf2(rval) * (Rf2(rval)-Rf2(rO)*np.sin(theta)**2)
+    return np.sin(theta) * np.sqrt(num/den)
 
 def T_lens(ths, rO=30, rS=None):
     if not rS:

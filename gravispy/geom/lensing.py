@@ -17,6 +17,7 @@ __all__ = [
         'radial_thin_lens',
         'schwarzschild_thin_lens',
         'static_spherical_lens',
+        'schwarzschild_lens'
         'barriola_vilenkin_lens',
         'ellis_wormhole_lens',
         ]
@@ -199,7 +200,7 @@ def static_spherical_lens(angles, rO, rS, metric):
                 continue
 
             rP = res[0]
-            break_points.append(rP)
+            #break_points.append(rP)
             try:
                 if not (S2(rP)*R2(rP) is np.NaN
                         or any(np.isclose(S2(rP)*R2(rP), [0., np.inf],
@@ -254,7 +255,6 @@ def schwarzschild_lens(angles, rO, rS, metric):
     lR = 1/np.sqrt(2)/metric.radius
     unstable_orbits = 1/np.sqrt(2)/np.array(metric.unstable_orbits)
     break_points = [lR, *unstable_orbits]
-    S2 = metric.radial_factor(generator=True)
     R2 = metric.angular_factor(generator=True)
     # used to identify possible angles
     R_inf1 = minimize_scalar(
@@ -275,7 +275,9 @@ def schwarzschild_lens(angles, rO, rS, metric):
         q1 = 2*lP*(1-lP/lR)
         q2 = 1 - lP/unstable_orbits[1]
         q3 = 1/lR
-        return 1/np.sqrt(q1*q - q2*q**2 - q3*q**3)
+        #return 1/np.sqrt(q1*q - q2*q**2 - q3*q**3)
+        # singularity is subtracted from the integrand
+        return 1/np.sqrt(q1*q - q2*q**2 - q3*q**3) - 1/np.sqrt(q1*q)
 
     def phi_func2(l, lP):
         L1 = lP**2*(1-lP/lR)
@@ -318,16 +320,18 @@ def schwarzschild_lens(angles, rO, rS, metric):
                         phi_func1,
                         0, lP-lO,
                         args=(lP,),
-                        #points=[lR, *unstable_orbits],
+                        points=[lR, *unstable_orbits],
                         epsabs=FLOAT_EPSILON,
                         )[0]
                 phi += quad(
                         phi_func2,
                         lS, lO,
                         args=(lP,),
-                        #points=[lR, *unstable_orbits],
+                        points=[lR, *unstable_orbits],
                         epsabs=FLOAT_EPSILON,
                         )[0]
+                # add back the subtracted singularity in phi_func1
+                phi += 4*np.sqrt((lP-lO)/(2*lP*(1-lP/lR)))
                 yield unwrap(np.sign(theta)*phi)
             else:
                 warn('brentq resulted in singularity',
