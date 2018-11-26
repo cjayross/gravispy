@@ -43,8 +43,7 @@ def imageTransform(fileName, phi, theta):
              #Second Swap
              
              swapCheck.add((x0,y0));
-             pixels[x0,y0] = pRef[x1,y1];
-#             
+             pixels[x0,y0] = pRef[x1,y1];      
              
          elif not( (x1,y1) in swapCheck) and  (x0,y0) in swapCheck:
              
