@@ -9,11 +9,11 @@ __all__ = [
         'NullRay',
         'Plane',
         'Sphere',
-        'wrap',
-        'unwrap',
         'plane_intersect',
         'sphere_intersect',
         'rotate3D',
+        'wrap',
+        'unwrap',
         'sph2pixel',
         'pixel2sph',
         'sph2stereo',
@@ -190,23 +190,6 @@ class Sphere (object):
     def __repr__(self):
         return str(self.__class__)
 
-def wrap(angles):
-    """
-    Wrap an array of angles in radians by the modulus of 2*pi.
-    """
-    if isinstance(angles, (list,tuple)):
-        angles = np.array(angles)
-    return np.mod(angles+np.pi, 2*np.pi)
-
-def unwrap(angles):
-    """
-    Unwrap an array of angles in radians by converting each element
-    to their 2*pi complement (the interval [-pi,pi]).
-    """
-    if isinstance(angles, (list,tuple)):
-        angles = np.array(angles)
-    return np.mod(angles+np.pi, 2*np.pi)-np.pi
-
 def plane_intersect(plane, ray):
     """
     Returns the ray parameter associated with the ray's intersection
@@ -245,6 +228,21 @@ def rotate3D(angle, axis=[0,0,1]):
                 [axis[2], 0, -axis[0]],
                 [-axis[1], axis[0], 0]])
             + (1-np.cos(angle))*np.outer(axis, axis))
+
+def wrap(angles):
+    """
+    Wrap an array of angles in radians by the modulus of 2*pi.
+    """
+    angles = np.asarray(angles)
+    return np.mod(angles, 2*np.pi)
+
+def unwrap(angles):
+    """
+    Unwrap an array of angles in radians by converting each element
+    to their 2*pi complement (the interval [-pi,pi]).
+    """
+    angles = np.asarray(angles)
+    return np.mod(angles+np.pi, 2*np.pi)-np.pi
 
 def sph2pixel(theta, phi, res=[256,256]):
     aratio = np.divide(*res)

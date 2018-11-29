@@ -1,38 +1,37 @@
 import numpy as np
 import itertools as it
 from PIL import Image
-from ..geom import pixel2sph, sph2pixel, wrap, Ray
+from ..geom import pixel2sph, sph2pixel, wrap
 
-def generate_lens_map(lens, res, args=(), prec=4):
+def generate_lens_map(lens, res, args=(), prec=3):
     aratio = np.divide(*res)
     coords = list(it.product(*map(np.arange,res)))
     x, y = np.asarray(coords).astype(int).T
     theta, phi = pixel2sph(x, y, res)
 
-    alpha = np.arccos(np.cos(theta)*np.cos(phi))
-    # consider alphas to be equal if they are the same up to 2 decimals
+    alpha = np.round(np.arccos(np.cos(theta)*np.cos(phi)), prec)
+    # consider alphas to be equal if they are the same up to 3 decimals
     # this reduces the amount of calls to lens from possibly millions
-    # to only hundreds (consistently 315 for some reason).
-    # this method does not scale well, however it is much preferrable to
-    # the alternatives we have at the moment.
+    # to only about 3000
     print('Compressing alpha')
-    #groups = it.groupby(np.unique(alpha), lambda a: np.round(a, 2))
-    alphaz = np.unique(np.round(alpha, prec))
+    alphaz = np.unique(alpha)
     print('len(alpha) = {}, len(alphaz) = {}'.format(len(alpha),len(alphaz)))
     print('Lensing')
-    betaz = np.fromiter(lens(alphaz, *args), np.float32)
-    lens_dict = dict(zip(alphaz, betaz))
+    betaz = np.fromiter(lens(alphaz, *args), np.float64)
+    betaz = dict(zip(alphaz, betaz))
     print('Expanding betaz')
-    beta = np.array([lens_dict[a] for a in np.round(alpha, prec)])
+    beta = np.fromiter(map(betaz.__getitem__, alpha), np.float64)
 
     gamma = np.sin(beta)/np.sin(alpha)
-    theta = wrap(np.arcsin(gamma*np.sin(theta)))
-    phi = wrap(np.arcsin(gamma*np.sin(phi)))
+    idxs = np.logical_not(np.logical_or(np.isnan(gamma),np.isinf(gamma)))
+    theta = wrap(np.arcsin(gamma[idxs]*np.sin(theta[idxs])))
+    phi = wrap(np.arcsin(gamma[idxs]*np.sin(phi[idxs])))
+    x = x[idxs]
+    y = y[idxs]
 
-    idxs = np.logical_not(np.isnan(beta))
-    print('building lens_map')
-    keys = zip(x[idxs], y[idxs])
-    values = zip(*sph2pixel(theta[idxs], phi[idxs], res))
+    print('Building lens_map')
+    keys = zip(x, y)
+    values = zip(*sph2pixel(theta, phi, res))
     return dict(zip(keys, values))
 
 def apply_lensing(img, lens_map, res=None, color_mod=1.):
@@ -54,7 +53,7 @@ def apply_lensing(img, lens_map, res=None, color_mod=1.):
             raise RuntimeError()
     new.save('output.png')
 
-#Inputs are 
+#Inputs are
 #   -Filename : Filepath of base image file
 #   -Phi : Array of size n, where Phi[i] = [phi0,phi1]
 #   -Theta : Array of size n, where Theta[i] = [theta0,theta1]
@@ -63,7 +62,7 @@ def apply_lensing(img, lens_map, res=None, color_mod=1.):
 #Function can display resultant image and/or save resultant image to file.
 def imageTransform(fileName, phi, theta):
     swapCheck = set();
-	#The addition is just using a linear multipler currently. Adjust value to fit desire. Currently 0.
+    #The addition is just using a linear multipler currently. Adjust value to fit desire. Currently 0.
     multiplier = 0.0;
     img = Image.open(fileName);
     ref = Image.open(fileName);
@@ -76,11 +75,10 @@ def imageTransform(fileName, phi, theta):
          x1 = phiTransform(phi[i][1],col-1);
          y0 = thetaTransform(theta[i][0],row-1);
          y1 = thetaTransform(theta[i][1],row-1);
-         
+
          if (x1,y1) in swapCheck and not((x0,y0) in swapCheck):
-             
+
              #First Swap
-             
              old = np.array( pixels[x1,y1]);
              new = np.array( pRef[x0,y0]);
              old = (old + multiplier * new).astype(int);
@@ -92,19 +90,17 @@ def imageTransform(fileName, phi, theta):
                  old[2] = 255;
              old = tuple(old);
              pixels[x1,y1] = old;
-             
+
              #Second Swap
-             
              swapCheck.add((x0,y0));
-             pixels[x0,y0] = pRef[x1,y1];      
-             
+             pixels[x0,y0] = pRef[x1,y1];
+
          elif not( (x1,y1) in swapCheck) and  (x0,y0) in swapCheck:
-             
+
              #First Swap
              swapCheck.add((x1,y1));
              pixels[x1,y1] = pRef[x0,y0];
-             
-             
+
              #Second Swap
              old = np.array( pixels[x0,y0]);
              new = np.array( pRef[x1,y1]);
@@ -123,11 +119,10 @@ def imageTransform(fileName, phi, theta):
              pixels[x0,y0] = pRef[x1,y1];
              pixels[x1,y1] = pRef[x0,y0];
 
-			 
-	#Display Image:
-    #img.show(); 
-	
-	#Save Image:
+    #Display Image:
+    #img.show();
+
+        #Save Image:
     img.save("output.jpg");
 
 
