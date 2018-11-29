@@ -9,10 +9,17 @@ __all__ = [
         'NullRay',
         'Plane',
         'Sphere',
+        'wrap',
         'unwrap',
         'plane_intersect',
         'sphere_intersect',
         'rotate3D',
+        'sph2pixel',
+        'pixel2sph',
+        'sph2stereo',
+        'stereo2sph',
+        'pixel2stereo',
+        'stereo2pixel',
         ]
 
 # This error tolerance will maintain accuracy up to 10 meters in units of c
@@ -183,6 +190,14 @@ class Sphere (object):
     def __repr__(self):
         return str(self.__class__)
 
+def wrap(angles):
+    """
+    Wrap an array of angles in radians by the modulus of 2*pi.
+    """
+    if isinstance(angles, (list,tuple)):
+        angles = np.array(angles)
+    return np.mod(angles+np.pi, 2*np.pi)
+
 def unwrap(angles):
     """
     Unwrap an array of angles in radians by converting each element
@@ -190,7 +205,7 @@ def unwrap(angles):
     """
     if isinstance(angles, (list,tuple)):
         angles = np.array(angles)
-    return np.mod(angles+np.pi,2*np.pi)-np.pi
+    return np.mod(angles+np.pi, 2*np.pi)-np.pi
 
 def plane_intersect(plane, ray):
     """
@@ -230,3 +245,27 @@ def rotate3D(angle, axis=[0,0,1]):
                 [axis[2], 0, -axis[0]],
                 [-axis[1], axis[0], 0]])
             + (1-np.cos(angle))*np.outer(axis, axis))
+
+def sph2pixel(theta, phi, res=[256,256]):
+    aratio = np.divide(*res)
+    x = np.rint((res[0]-1)*phi/2/np.pi/aratio)
+    y = np.rint((res[1]-1)*(np.cos(theta)+1)/2)
+    return np.array([x, y]).astype(int)
+
+def pixel2sph(x, y, res=[256,256]):
+    aratio = np.divide(*res)
+    phi = 2*np.pi*aratio*x/(res[0]-1)
+    theta = np.arccos(2*y/(res[1]-1)-1)
+    return np.array([theta, phi])
+
+def sph2stereo(theta, phi):
+    return np.exp(1j*phi)/np.tan(theta/2)
+
+def stereo2sph(xi):
+    return np.array([wrap(2*np.arctan2(1,np.abs(xi))), wrap(np.angle(xi))])
+
+def pixel2stereo(x, y, res=[256,256]):
+    return sph2stereo(*pixel2sph(x, y, res))
+
+def stereo2pixel(xi, res=[256,256]):
+    return sph2pixel(*stereo2sph(xi), res)

@@ -1,5 +1,61 @@
-from PIL import Image
 import numpy as np
+import itertools as it
+from PIL import Image
+from ..geom import pixel2sph, sph2pixel, wrap, Ray
+
+def generate_lens_map(lens, res, args=()):
+    aratio = np.divide(*res)
+    coords = list(it.product(*map(np.arange,res)))
+    x, y = np.asarray(coords).astype(int).T
+    theta, phi = pixel2sph(x, y, res)
+
+    alpha = np.arccos(np.cos(theta)*np.cos(phi))
+    # consider alphas to be equal if they are the same up to 2 decimals
+    # this reduces the amount of calls to lens from possibly millions
+    # to only hundreds (consistently 315 for some reason).
+    # this method does not scale well, however it is much preferrable to
+    # the alternatives we have at the moment.
+    print('sorting')
+    groups = it.groupby(np.unique(alpha), lambda a: np.round(a, 2))
+    print('grouping')
+    alphaz = np.array([a for a, _ in groups])
+    print('len(alpha) = {}, len(alphaz) = {}'.format(len(alpha),len(alphaz)))
+    # this is slow
+    alpha_map = lambda val: alphaz[(np.abs(alphaz-val)).argmin()]
+    print('lensing')
+    betaz = np.fromiter(lens(alphaz, *args), np.float32)
+    lens_dict = dict(zip(alphaz, betaz))
+    print('expanding betaz')
+    beta = np.array([lens_dict[alpha_map(a)] for a in alpha])
+
+    gamma = np.sin(beta)/np.sin(alpha)
+    theta = wrap(np.arcsin(gamma*np.sin(theta)))
+    phi = wrap(np.arcsin(gamma*np.sin(phi)))
+
+    idxs = np.logical_not(np.isnan(beta))
+    print('building lens_map')
+    keys = zip(x[idxs], y[idxs])
+    values = zip(*sph2pixel(theta[idxs], phi[idxs], res))
+    return dict(zip(keys, values))
+
+def apply_lensing(img, lens_map, res=None, color_mod=1.):
+    if not res:
+        res = img.size
+    pix = img.load()
+    new = Image.new(img.mode, res)
+    new_pix = new.load()
+    for pix_coord in it.product(*map(range, res)):
+        # we currently aren't implementing hidden images
+        try:
+            map_coord = tuple(map(int,lens_map[pix_coord]))
+            new_pix[pix_coord] = pix[map_coord]
+        except KeyError:
+            continue
+        except IndexError:
+            print('pix coord = {}, map_coord = {}'.format(pix_coord, map_coord))
+            print('res = {}'.format(res))
+            raise RuntimeError()
+    new.save('output.png')
 
 #Inputs are 
 #   -Filename : Filepath of base image file
