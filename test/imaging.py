@@ -12,7 +12,7 @@ S = metric.Schwarzschild(1, [t,r,th,ph], timelike=False, lambdify_modules='numpy
 
 #args = (3e+3,3e+7, S)
 args = (3e+3,3e+7)
-img = Image.open('earth.jpg')
+img = Image.open('earth.png')
 #lens_map = model.generate_lens_map(lensing.schwarzschild_lens, img.size, args)
 print('Generating lens map')
 lens_map = model.generate_lens_map(lensing.trivial_lens, img.size, args)

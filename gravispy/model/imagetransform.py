@@ -3,7 +3,7 @@ import itertools as it
 from PIL import Image
 from ..geom import pixel2sph, sph2pixel, wrap, Ray
 
-def generate_lens_map(lens, res, args=()):
+def generate_lens_map(lens, res, args=(), prec=4):
     aratio = np.divide(*res)
     coords = list(it.product(*map(np.arange,res)))
     x, y = np.asarray(coords).astype(int).T
@@ -15,18 +15,15 @@ def generate_lens_map(lens, res, args=()):
     # to only hundreds (consistently 315 for some reason).
     # this method does not scale well, however it is much preferrable to
     # the alternatives we have at the moment.
-    print('sorting')
-    groups = it.groupby(np.unique(alpha), lambda a: np.round(a, 2))
-    print('grouping')
-    alphaz = np.array([a for a, _ in groups])
+    print('Compressing alpha')
+    #groups = it.groupby(np.unique(alpha), lambda a: np.round(a, 2))
+    alphaz = np.unique(np.round(alpha, prec))
     print('len(alpha) = {}, len(alphaz) = {}'.format(len(alpha),len(alphaz)))
-    # this is slow
-    alpha_map = lambda val: alphaz[(np.abs(alphaz-val)).argmin()]
-    print('lensing')
+    print('Lensing')
     betaz = np.fromiter(lens(alphaz, *args), np.float32)
     lens_dict = dict(zip(alphaz, betaz))
-    print('expanding betaz')
-    beta = np.array([lens_dict[alpha_map(a)] for a in alpha])
+    print('Expanding betaz')
+    beta = np.array([lens_dict[a] for a in np.round(alpha, prec)])
 
     gamma = np.sin(beta)/np.sin(alpha)
     theta = wrap(np.arcsin(gamma*np.sin(theta)))
