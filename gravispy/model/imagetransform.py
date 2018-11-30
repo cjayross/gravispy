@@ -1,37 +1,44 @@
 import numpy as np
 import itertools as it
 from PIL import Image
-from ..geom import pixel2sph, sph2pixel, wrap
+from ..geom import pixel2sph, sph2pixel, wrap, unwrap
 
 def generate_lens_map(lens, res, args=(), prec=3):
-    aratio = np.divide(*res)
     coords = list(it.product(*map(np.arange,res)))
     x, y = np.asarray(coords).astype(int).T
     theta, phi = pixel2sph(x, y, res)
 
-    alpha = np.round(np.arccos(np.cos(theta)*np.cos(phi)), prec)
     # consider alphas to be equal if they are the same up to 3 decimals
     # this reduces the amount of calls to lens from possibly millions
     # to only about 3000
-    print('Compressing alpha')
+    arg = np.where(np.isclose(theta,np.pi/2),
+                   np.cos(phi),
+                   np.cos(theta)*np.cos(phi))
+    alpha = np.round(np.arccos(arg), prec)
     alphaz = np.unique(alpha)
-    print('len(alpha) = {}, len(alphaz) = {}'.format(len(alpha),len(alphaz)))
-    print('Lensing')
     betaz = np.fromiter(lens(alphaz, *args), np.float64)
     betaz = dict(zip(alphaz, betaz))
-    print('Expanding betaz')
     beta = np.fromiter(map(betaz.__getitem__, alpha), np.float64)
 
-    gamma = np.sin(beta)/np.sin(alpha)
+    gamma = np.where(np.isclose(alpha,0),
+                     np.Inf,
+                     np.sin(beta)/np.sin(alpha))
     idxs = np.logical_not(np.logical_or(np.isnan(gamma),np.isinf(gamma)))
-    theta = wrap(np.arcsin(gamma[idxs]*np.sin(theta[idxs])))
-    phi = wrap(np.arcsin(gamma[idxs]*np.sin(phi[idxs])))
+
+    gamma = gamma[idxs]
     x = x[idxs]
     y = y[idxs]
+    mu = theta[idxs]
+    nu = phi[idxs]
 
-    print('Building lens_map')
+    k = {'mu':np.abs(unwrap(mu)) > np.pi/2,
+         'nu':np.abs(unwrap(nu)) > np.pi/2}
+
+    mu = np.pi*k['mu'] + (-1)**k['mu']*np.arcsin(gamma*np.sin(mu))
+    nu = np.pi*k['nu'] + (-1)**k['nu']*np.arcsin(gamma*np.sin(nu))
+
     keys = zip(x, y)
-    values = zip(*sph2pixel(theta, phi, res))
+    values = zip(*sph2pixel(mu, nu, res))
     return dict(zip(keys, values))
 
 def apply_lensing(img, lens_map, res=None, color_mod=1.):

@@ -10,7 +10,7 @@ from .metric import SphericalSpacetime, BarriolaVilenkin, EllisWormhole,\
 
 __all__ = [
         'trivial_deflection',
-        'snells_law_deflection',
+        'snells_law',
         'schwarzschild_deflection',
         'thin_lens',
         'trivial_lens',
@@ -27,7 +27,7 @@ __all__ = [
 def trivial_deflection(theta):
     return theta
 
-def snells_law_deflection(theta, ref_index):
+def snells_law(theta, ref_index):
     return np.arcsin(ref_index*np.sin(theta))
 
 def schwarzschild_deflection(r, metric):
@@ -41,15 +41,15 @@ def schwarzschild_deflection(r, metric):
 ### Lensing functions ###
 
 def thin_lens(angles, rO, rS, deflection_function, *args):
-    if isinstance(angles, (float, int)):
-        angles = np.array([angles])
+    angles = unwrap(angles)
     plane = Plane([0,0,0], [rO,0,0])
     sphere = Sphere([0,0,0], rS)
     for theta in angles:
         ray = Ray([rO,0,0], [np.pi/2,theta])
         T = plane_intersect(plane, ray)
         if T is np.NaN:
-            yield unwrap(theta)
+            RT = ray(sphere_intersect(ray, sphere))
+            yield np.arctan2(RT[1], RT[0])
             continue
         RT = ray(T)
         D = plane.normal @ (ray.origin - plane.origin)
