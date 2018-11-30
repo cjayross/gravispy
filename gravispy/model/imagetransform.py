@@ -9,7 +9,7 @@ def generate_lens_map(lens, res, args=(), prec=3):
     theta, phi = pixel2sph(x, y, res)
 
     arccos2 = lambda a: np.sign(unwrap(a))*np.arccos(a)
-    arcsin2 = lambda a: np.pi*k + (-1)**k*np.arcsin(a)
+    arcsin2 = lambda a, k: np.pi*k + (-1)**k*np.arcsin(a)
 
     # consider alphas to be equal if they are the same up
     # to 3 decimals (by default) this reduces the amount of
