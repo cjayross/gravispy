@@ -234,7 +234,7 @@ def wrap(angles):
     Wrap an array of angles in radians by the modulus of 2*pi.
     """
     angles = np.asarray(angles)
-    return np.mod(angles, 2*np.pi)
+    return np.mod(angles+2*np.pi, 2*np.pi)
 
 def unwrap(angles):
     """
@@ -245,15 +245,13 @@ def unwrap(angles):
     return np.mod(angles+np.pi, 2*np.pi)-np.pi
 
 def sph2pixel(theta, phi, res=[256,256]):
-    aratio = np.divide(*res)
-    x = np.rint((res[0]-1)*phi/2/np.pi/aratio)
-    y = np.rint((res[1]-1)*(np.cos(theta)+1)/2)
+    x = np.rint((res[0]-1)*wrap(phi)/2/np.pi)
+    y = np.rint((res[1]-1)*(np.cos(theta+np.pi/2)+1)/2)
     return np.array([x, y]).astype(int)
 
 def pixel2sph(x, y, res=[256,256]):
-    aratio = np.divide(*res)
-    phi = 2*np.pi*aratio*x/(res[0]-1)
-    theta = np.arccos(2*y/(res[1]-1)-1)
+    phi = 2*np.pi*x/(res[0]-1)
+    theta = np.arccos(2*y/(res[1]-1)-1)-np.pi/2
     return np.array([theta, phi])
 
 def sph2stereo(theta, phi):
