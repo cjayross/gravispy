@@ -44,6 +44,7 @@ def thin_lens(angles, rO, rS, deflection_function, *args):
     angles = unwrap(angles)
     plane = Plane([0,0,0], [rO,0,0])
     sphere = Sphere([0,0,0], rS)
+    errstate = np.seterr(invalid='ignore')
     for theta in angles:
         ray = Ray([rO,0,0], [np.pi/2,theta])
         T = plane_intersect(plane, ray)
@@ -62,20 +63,22 @@ def thin_lens(angles, rO, rS, deflection_function, *args):
             new_ray.rotate(phi, np.cross(new_ray.dir, ray.dir))
         RT = new_ray(sphere_intersect(new_ray, sphere))
         yield np.arctan2(RT[1], RT[0])
+    np.seterr(**errstate)
 
 def trivial_lens(angles, rO, rS):
     return thin_lens(angles, rO, rS, trivial_deflection)
 
 def radial_thin_lens(angles, rO, rS, deflection_function, *args):
-    if isinstance(angles, (float, int)):
-        angles = np.array([angles])
+    angles = unwrap(angles)
     plane = Plane([0,0,0], [rO,0,0])
     sphere = Sphere([0,0,0], rS)
+    errstate = np.seterr(invalid='ignore')
     for theta in angles:
         ray = Ray([rO,0,0], [np.pi/2,theta])
         T = plane_intersect(plane, ray)
         if T is np.NaN:
-            yield unwrap(theta)
+            RT = ray(sphere_intersect(ray, sphere))
+            yield np.arctan2(RT[1], RT[0])
             continue
         RT = ray(T)
         D = plane.normal @ (ray.origin - plane.origin)
@@ -90,6 +93,7 @@ def radial_thin_lens(angles, rO, rS, deflection_function, *args):
                     phi, np.cross(new_ray.dir, -np.sign(D)*plane.normal))
         RT = new_ray(sphere_intersect(new_ray, sphere))
         yield np.arctan2(RT[1], RT[0])
+    np.seterr(**errstate)
 
 def schwarzschild_thin_lens(angles, rO, rS, metric):
     return radial_thin_lens(angles, rO, rS, schwarzschild_deflection, metric)
@@ -140,8 +144,6 @@ def static_spherical_lens(angles, rO, rS, metric):
              'singularity than observer',
              RuntimeWarning, stacklevel=2)
         return len(angles)*[np.NaN]
-    if isinstance(angles, (float, int)):
-        angles = np.array([angles])
 
     angles = unwrap(angles)
     S2 = metric.radial_factor(generator=True)
@@ -166,6 +168,7 @@ def static_spherical_lens(angles, rO, rS, metric):
         den = R2(r) * (R2(r)-R2(rO)*np.sin(theta)**2)
         return np.sin(theta) * np.sqrt(num/den)
 
+    errstate = np.seterr(invalid='ignore')
     for theta in angles:
         if np.isclose(theta, 0., atol=FLOAT_EPSILON):
             # by symmetry
@@ -231,6 +234,7 @@ def static_spherical_lens(angles, rO, rS, metric):
             continue
 
         yield unwrap(phi)
+    np.seterr(**errstate)
 
 def schwarzschild_lens(angles, rO, rS, metric):
     """
@@ -246,8 +250,6 @@ def schwarzschild_lens(angles, rO, rS, metric):
              'singularity than observer',
              RuntimeWarning, stacklevel=2)
         return len(angles)*[np.NaN]
-    if isinstance(angles, (float, int)):
-        angles = np.array([angles])
 
     angles = unwrap(angles)
     lO = 1/np.sqrt(2)/rO
@@ -267,6 +269,7 @@ def schwarzschild_lens(angles, rO, rS, metric):
             bounds=(0, rO))['fun']
     delta1 = R_inf1/R2(rO)
     delta2 = R_inf2/R2(rO)
+    errstate = np.seterr(invalid='ignore')
 
     def impact_func(lP, theta):
         return np.sin(theta)**2*lP**2*(1-lP/lR) - lO**2*(1-lO/lR)
@@ -346,6 +349,7 @@ def schwarzschild_lens(angles, rO, rS, metric):
                     epsabs=FLOAT_EPSILON,
                     )[0]
             yield unwrap(phi)
+    np.seterr(**errstate)
 
 def barriola_vilenkin_lens(angles, rO, rS, metric):
     if not isinstance(metric, BarriolaVilenkin):
@@ -357,12 +361,12 @@ def barriola_vilenkin_lens(angles, rO, rS, metric):
              'singularity than observer',
              RuntimeWarning, stacklevel=2)
         return len(angles)*[np.NaN]
-    if isinstance(angles, (float, int)):
-        angles = np.array([angles])
 
     angles = unwrap(angles)
+    errstate = np.seterr(invalid='ignore')
     for theta in angles:
         yield unwrap((theta - np.arcsin(rO*np.sin(theta)/rS))/metric.k)
+    np.seterr(**errstate)
 
 def ellis_wormhole_lens(angles, rO, rS, metric):
     """
@@ -372,11 +376,9 @@ def ellis_wormhole_lens(angles, rO, rS, metric):
         raise TypeError('metric must describe an Ellis wormhole')
     if any(map(lambda a: a not in metric.basis, metric.args)):
         raise ValueError('metric has unset variables')
-    if isinstance(angles, (float, int)):
-        angles = np.array([angles])
 
     angles = unwrap(angles)
-
+    errstate = np.seterr(invalid='ignore')
     def phi_func(r, rO, theta):
         return np.sqrt((rO**2+metric.a**2)
                        / ((r**2+metric.a**2)
@@ -391,3 +393,4 @@ def ellis_wormhole_lens(angles, rO, rS, metric):
             yield np.NaN
             continue
         yield unwrap(quad(phi_func,rO,rS,(rO,theta),epsabs=FLOAT_EPSILON)[0])
+    np.seterr(**errstate)

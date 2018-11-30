@@ -8,37 +8,37 @@ def generate_lens_map(lens, res, args=(), prec=3):
     x, y = np.asarray(coords).astype(int).T
     theta, phi = pixel2sph(x, y, res)
 
+    def arcsin2(a, k=None):
+        return np.pi*k + (-1)**k*np.arcsin(a)
+
+    def arccos2(a):
+        return np.sign(unwrap(a))*np.arccos(a)
+
     # consider alphas to be equal if they are the same up to 3 decimals
     # this reduces the amount of calls to lens from possibly millions
     # to only about 3000
-    arg = np.where(np.isclose(theta,np.pi/2),
+    arg = np.where(np.isclose(np.abs(theta), np.pi/2),
                    np.cos(phi),
                    np.cos(theta)*np.cos(phi))
-    alpha = np.round(np.arccos(arg), prec)
+    alpha = np.round(arccos2(arg), prec)
     alphaz = np.unique(alpha)
     betaz = np.fromiter(lens(alphaz, *args), np.float64)
     betaz = dict(zip(alphaz, betaz))
     beta = np.fromiter(map(betaz.__getitem__, alpha), np.float64)
+    #beta = alpha
 
-    gamma = np.where(np.isclose(alpha,0),
-                     np.Inf,
-                     np.sin(beta)/np.sin(alpha))
-    idxs = np.logical_not(np.logical_or(np.isnan(gamma),np.isinf(gamma)))
+    errstate = np.seterr(all='ignore')
+    gamma = np.sin(beta)/np.sin(alpha)
+    mu, nu = map(lambda a: gamma*np.sin(a), [theta, phi])
+    #k = (np.sign(unwrap(beta))<0)^(np.sign(unwrap(alpha))<0)^(np.abs(unwrap(phi))>np.pi/2)
+    k1,k2 = map(lambda a: np.abs(unwrap(a))>np.pi/2, [theta, phi])
+    theta, phi = map(arcsin2, [mu, nu], [k1,k2])
+    #theta, phi = map(arcsin2, [mu, nu], 2*[k])
 
-    gamma = gamma[idxs]
-    x = x[idxs]
-    y = y[idxs]
-    mu = theta[idxs]
-    nu = phi[idxs]
-
-    k = {'mu':np.abs(unwrap(mu)) > np.pi/2,
-         'nu':np.abs(unwrap(nu)) > np.pi/2}
-
-    mu = np.pi*k['mu'] + (-1)**k['mu']*np.arcsin(gamma*np.sin(mu))
-    nu = np.pi*k['nu'] + (-1)**k['nu']*np.arcsin(gamma*np.sin(nu))
-
-    keys = zip(x, y)
-    values = zip(*sph2pixel(mu, nu, res))
+    idxs = np.logical_not(np.isnan(theta) | np.isnan(phi))
+    keys = zip(x[idxs], y[idxs])
+    values = zip(*sph2pixel(theta[idxs], phi[idxs], res))
+    np.seterr(**errstate)
     return dict(zip(keys, values))
 
 def apply_lensing(img, lens_map, res=None, color_mod=1.):

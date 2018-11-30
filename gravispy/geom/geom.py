@@ -16,10 +16,6 @@ __all__ = [
         'unwrap',
         'sph2pixel',
         'pixel2sph',
-        'sph2stereo',
-        'stereo2sph',
-        'pixel2stereo',
-        'stereo2pixel',
         ]
 
 # This error tolerance will maintain accuracy up to 10 meters in units of c
@@ -246,22 +242,10 @@ def unwrap(angles):
 
 def sph2pixel(theta, phi, res=[256,256]):
     x = np.rint((res[0]-1)*wrap(phi)/2/np.pi)
-    y = np.rint((res[1]-1)*(np.cos(theta+np.pi/2)+1)/2)
+    y = np.rint((res[1]-1)*(1-np.sin(theta))/2)
     return np.array([x, y]).astype(int)
 
 def pixel2sph(x, y, res=[256,256]):
     phi = 2*np.pi*x/(res[0]-1)
     theta = np.arccos(2*y/(res[1]-1)-1)-np.pi/2
     return np.array([theta, phi])
-
-def sph2stereo(theta, phi):
-    return np.exp(1j*phi)/np.tan(theta/2)
-
-def stereo2sph(xi):
-    return np.array([wrap(2*np.arctan2(1,np.abs(xi))), wrap(np.angle(xi))])
-
-def pixel2stereo(x, y, res=[256,256]):
-    return sph2stereo(*pixel2sph(x, y, res))
-
-def stereo2pixel(xi, res=[256,256]):
-    return sph2pixel(*stereo2sph(xi), res)

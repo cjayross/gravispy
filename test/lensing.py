@@ -95,6 +95,8 @@ def delta2(rO):
         return np.pi/2
 
 init_printing(num_columns=150)
+#testS = T_sc_lens(s,10,3e+7)
 testT = T_trivial_lens(s)
-plt.plot(s,testT)
-plt.show()
+#plt.plot(s,testS)
+#plt.plot(s,testT)
+#plt.show()
