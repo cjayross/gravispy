@@ -1,12 +1,75 @@
 % learn about REVTeX at https://journals.aps.org/revtex
-\documentclass{revtex4-1}
+\documentclass[
+draft,
+aps,prd,
+preprint,
+onecolumn,
+12pt,
+nobibnotes,
+amsmath, amssymb,
+secnumarabic,
+]{revtex4-1}
 
-\title{Gravispy: Gravitational Simulations in Open Source Software}
-\author{Calvin Ross and Spence Norwood and Kellen O'keefe}
-\affiliation{University of Texas at Dallas, Physics Department}
-\homepage[Vist: ]{https://github.com/cjayross/gravispy}
+\usepackage{standalone}
+\usepackage{graphicx}
+\usepackage[italicdiff]{physics}
+\usepackage{tikz}
+
+\usetikzlibrary{decorations.markings}
+\usetikzlibrary{calc}
+\graphicspath{{../png}}
+
+\newcommand{\comment}[1]{}
 
 \begin{document}
+
+\title{Gravispy: Gravitational Simulations in Open Source Software}
+\homepage{https://github.com/cjayross/gravispy}
+\author{Spence Norwood}
+\author{Kellen O'Keefe}
+\author{Calvin Ross}
+\affiliation{University of Texas at Dallas, Physics Department}
+\begin{abstract}
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+  Curabitur venenatis ultricies purus, vel pellentesque tortor pellentesque vulputate.
+  Sed a tincidunt felis.
+  Integer ultrices, dui in maximus ultrices, leo erat aliquet diam, ut interdum sapien turpis eget lorem.
+  Phasellus lectus augue, vehicula vel faucibus sed, dapibus in dolor.
+  Vivamus interdum diam vitae fermentum mollis.
+  Donec tortor sem, mollis ut tincidunt ut, iaculis id quam.
+  In nunc lorem, mattis id hendrerit eget, accumsan vitae odio.
+  Morbi ipsum massa, volutpat eget magna hendrerit, pellentesque pellentesque augue.
+  Fusce a convallis massa, non mattis nisl.
+  Mauris ac luctus sem.
+  Aenean dui eros, blandit in nisl et, porta malesuada diam.
+  Sed eget turpis eget erat vehicula condimentum.
+  Donec eu tellus ultricies, luctus massa non, convallis lacus.
+  Nunc fringilla porttitor sem nec luctus.
+  Quisque tincidunt dui id finibus facilisis.
+  Proin in consectetur risus, ut ornare ipsum.
+
+  Phasellus gravida leo nec quam sagittis, non semper quam molestie.
+  Praesent sed commodo tortor, et ultrices tellus.
+  Suspendisse malesuada sed mi quis ultrices.
+  Suspendisse quis purus non ligula commodo tempor sit amet eget massa.
+  Vivamus nunc diam, elementum sit amet est a, aliquam ultrices purus.
+  Phasellus vestibulum enim nisl, at luctus leo mattis eu. Fusce non commodo est.
+\end{abstract}
 \maketitle
+
+\section{Introduction}
+\input{1_intro}
+
+\section{Motivation}
+\input{2_motive}
+
+\section{Methods}
+\input{3_method}
+
+\section{Results}
+\input{4_results}
+
+\section{Discussion and Conclusion}
+\input{5_remarks}
 
 \end{document}

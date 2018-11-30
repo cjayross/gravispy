@@ -246,6 +246,8 @@ def sph2pixel(theta, phi, res=[256,256]):
     return np.array([x, y]).astype(int)
 
 def pixel2sph(x, y, res=[256,256]):
+    # phi \in [0, 2*pi]
+    # theta \in [-np.pi/2, np.pi/2]
     phi = 2*np.pi*x/(res[0]-1)
     theta = np.arccos(2*y/(res[1]-1)-1)-np.pi/2
     return np.array([theta, phi])

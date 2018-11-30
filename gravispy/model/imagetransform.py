@@ -8,37 +8,35 @@ def generate_lens_map(lens, res, args=(), prec=3):
     x, y = np.asarray(coords).astype(int).T
     theta, phi = pixel2sph(x, y, res)
 
-    def arcsin2(a, k=None):
-        return np.pi*k + (-1)**k*np.arcsin(a)
+    arccos2 = lambda a: np.sign(unwrap(a))*np.arccos(a)
+    arcsin2 = lambda a: np.pi*k + (-1)**k*np.arcsin(a)
 
-    def arccos2(a):
-        return np.sign(unwrap(a))*np.arccos(a)
-
-    # consider alphas to be equal if they are the same up to 3 decimals
-    # this reduces the amount of calls to lens from possibly millions
-    # to only about 3000
+    # consider alphas to be equal if they are the same up
+    # to 3 decimals (by default) this reduces the amount of
+    # calls to lens from possibly millions to only about 3000
     arg = np.where(np.isclose(np.abs(theta), np.pi/2),
                    np.cos(phi),
                    np.cos(theta)*np.cos(phi))
+    # the necessity to have the alphas be signed should be looked into
     alpha = np.round(arccos2(arg), prec)
     alphaz = np.unique(alpha)
     betaz = np.fromiter(lens(alphaz, *args), np.float64)
-    betaz = dict(zip(alphaz, betaz))
-    beta = np.fromiter(map(betaz.__getitem__, alpha), np.float64)
-    #beta = alpha
+    beta_map = dict(zip(alphaz, betaz))
+    beta = np.fromiter(map(beta_map.__getitem__, alpha), np.float64)
 
     errstate = np.seterr(all='ignore')
     gamma = np.sin(beta)/np.sin(alpha)
     mu, nu = map(lambda a: gamma*np.sin(a), [theta, phi])
-    #k = (np.sign(unwrap(beta))<0)^(np.sign(unwrap(alpha))<0)^(np.abs(unwrap(phi))>np.pi/2)
+    # this choice of k's needs to be scrutinized
     k1,k2 = map(lambda a: np.abs(unwrap(a))>np.pi/2, [theta, phi])
     theta, phi = map(arcsin2, [mu, nu], [k1,k2])
-    #theta, phi = map(arcsin2, [mu, nu], 2*[k])
 
+    # cut out invalid results
     idxs = np.logical_not(np.isnan(theta) | np.isnan(phi))
     keys = zip(x[idxs], y[idxs])
     values = zip(*sph2pixel(theta[idxs], phi[idxs], res))
     np.seterr(**errstate)
+
     return dict(zip(keys, values))
 
 def apply_lensing(img, lens_map, res=None, color_mod=1.):
@@ -53,11 +51,9 @@ def apply_lensing(img, lens_map, res=None, color_mod=1.):
             map_coord = tuple(map(int,lens_map[pix_coord]))
             new_pix[pix_coord] = pix[map_coord]
         except KeyError:
+            # the pixel defaults to black
             continue
-        except IndexError:
-            print('pix coord = {}, map_coord = {}'.format(pix_coord, map_coord))
-            print('res = {}'.format(res))
-            raise RuntimeError()
+    # temporary result
     new.save('output.png')
 
 #Inputs are

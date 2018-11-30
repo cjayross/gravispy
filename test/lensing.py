@@ -6,6 +6,9 @@ from sympy import *
 from scipy.optimize import brentq, minimize_scalar
 from scipy.integrate import solve_ivp, romberg, quad
 import gravispy.geom as geom
+from basic_units import radians
+wrap = geom.wrap
+unwrap = geom.unwrap
 metric = geom.metric
 lensing = geom.lensing
 Ray = geom.Ray
@@ -95,8 +98,16 @@ def delta2(rO):
         return np.pi/2
 
 init_printing(num_columns=150)
-#testS = T_sc_lens(s,10,3e+7)
-testT = T_trivial_lens(s)
-#plt.plot(s,testS)
-#plt.plot(s,testT)
-#plt.show()
+testS1 = T_sc_lens(unwrap(s),10)
+testS2 = T_lens(unwrap(s),10)
+testS3 = T_thin_lens(unwrap(s),10)
+plt.xlabel(r'Observation Angle, $\Theta$')
+plt.ylabel(r'Source Angular Position, $\Phi$')
+plt.plot(s*radians,unwrap(testS1+np.pi),label='Explicit Lens')
+plt.plot(s*radians,unwrap(testS2+np.pi),alpha=.7,label='General Lens')
+plt.plot(s*radians,unwrap(testS3+np.pi),'--k',alpha=.7,label='Thin Lens')
+plt.xlim(0*radians,2*(np.pi*radians))
+plt.ylim(-np.pi*radians,np.pi*radians)
+plt.title('Schwarzschild Lensing Methods')
+plt.legend()
+plt.savefig('sc_lensing.png')
