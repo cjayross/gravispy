@@ -14,8 +14,8 @@ __all__ = [
         'rotate3D',
         'wrap',
         'unwrap',
-        'sph2pixel',
-        'pixel2sph',
+        'sph2pix',
+        'pix2sph',
         ]
 
 # This error tolerance will maintain accuracy up to 10 meters in units of c
@@ -240,14 +240,14 @@ def unwrap(angles):
     angles = np.asarray(angles)
     return np.mod(angles+np.pi, 2*np.pi)-np.pi
 
-def sph2pixel(theta, phi, res=[256,256]):
+def sph2pix(theta, phi, res):
     x = np.rint((res[0]-1)*wrap(phi)/2/np.pi)
     y = np.rint((res[1]-1)*(1-np.sin(theta))/2)
     return np.array([x, y]).astype(int)
 
-def pixel2sph(x, y, res=[256,256]):
-    # phi \in [0, 2*pi]
+def pix2sph(x, y, res):
+    # phi \in [-pi, pi]
     # theta \in [-pi/2, pi/2]
-    phi = 2*np.pi*x/(res[0]-1)
+    phi = unwrap(2*np.pi*x/(res[0]-1))
     theta = np.arccos(2*y/(res[1]-1)-1)-np.pi/2
     return np.array([theta, phi])

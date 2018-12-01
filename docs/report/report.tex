@@ -14,28 +14,42 @@ secnumarabic,
 ]{revtex4-1}
 
 \usepackage[utf8]{inputenc}
-\usepackage{minted}
+\usepackage[english]{babel}
+\usepackage{hyperref}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{standalone}
 \usepackage{multirow}
 \usepackage{longtable}
-\usepackage{siunitx}
 \usepackage{graphicx}
-\usepackage[italicdiff]{physics}
 \usepackage{tikz}
+\usepackage{minted}
+\usepackage{siunitx}
+\usepackage[italicdiff]{physics}
 
+\hypersetup{%
+colorlinks=true,
+linkcolor=RoyalBlue,
+urlcolor=RoyalBlue,
+citecolor=RoyalBlue,
+}
 \usetikzlibrary{decorations.markings}
 \usetikzlibrary{calc}
 \graphicspath{{../png/}}
 \usemintedstyle{vs}
-\setminted[python]{mathescape=true,python3=true}
+\definecolor{LightGray}{gray}{.9}
+\setminted[python]{%
+bgcolor=LightGray,
+mathescape=true,
+python3=true,
+baselinestretch=1,
+}
 
 \newcommand{\comment}[1]{}
 \newcommand{\python}[1]{\textcolor{BrickRed}{\texttt{#1}}}
 
 \begin{document}
 
-\title{Gravispy: Gravitational Simulations in Open Source Software}
+\title{Gravispy: gravitational simulations in open source software}
 \homepage{https://github.com/cjayross/gravispy}
 \author{Spence Norwood}
 \author{Kellen O'Keefe}
@@ -69,19 +83,22 @@ secnumarabic,
 \end{abstract}
 \maketitle
 
-\section{Introduction}
+\section{Introduction\label{sec:intro}}
 \input{1_intro}
 
-\section{Motivation}
+\section{Motivation\label{sec:motive}}
 \input{2_motive}
 
-\section{Methods}
+\section{Methods\label{sec:method}}
 \input{3_method}
 
-\section{Results}
+\section{Results\label{sec:results}}
 \input{4_results}
 
 \section{Discussion and Conclusion}
 \input{5_remarks}
+
+\nocite{*}
+\bibliography{report}
 
 \end{document}

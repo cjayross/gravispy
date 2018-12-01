@@ -6,7 +6,7 @@
 %Control: page (0) single
 %Control: year (1) truncated
 %Control: production of eprint (0) enabled
-\begin{thebibliography}{0}%
+\begin{thebibliography}{2}%
 \makeatletter
 \providecommand \@ifxundefined [1]{%
  \@ifx{#1\undefined}
@@ -50,4 +50,14 @@
 \providecommand \BibitemShut  [1]{\csname bibitem#1\endcsname}%
 \let\auto@bib@innerbib\@empty
 %</preamble>
+\bibitem [{\citenamefont {Perlick}(2004)}]{gen_lens}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {V.}~\bibnamefont
+  {Perlick}},\ }\href {\doibase https://arxiv.org/pdf/gr-qc/0307072.pdf}
+  {\bibfield  {journal} {\bibinfo  {journal} {Phys. Rev. D}\ }\textbf {\bibinfo
+  {volume} {69}} (\bibinfo {year} {2004}),\
+  https://arxiv.org/pdf/gr-qc/0307072.pdf}\BibitemShut {NoStop}%
+\bibitem [{sc_()}]{sc_lens}%
+  \BibitemOpen
+  \href@noop {} {\ }\BibitemShut {NoStop}%
 \end{thebibliography}%
