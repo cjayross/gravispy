@@ -1,6 +1,10 @@
 % learn about REVTeX at https://journals.aps.org/revtex
+% useful references:
+%   https://cdn.journals.aps.org/files/revtex/summary4-1.pdf
+%   ftp://ftp.dante.de/tex-archive/info/latex-refsheet/LaTeX_RefSheet.pdf
+%   http://www-groups.mcs.st-andrews.ac.uk/~alanc/pub/c_tikzref/c_tikzref.pdf
 \documentclass[
-draft,
+%draft,
 aps,prd,
 preprint,
 onecolumn,
@@ -9,6 +13,9 @@ amsmath, amssymb,
 secnumarabic,
 ]{revtex4-1}
 
+\usepackage[utf8]{inputenc}
+\usepackage{minted}
+\usepackage[dvipsnames]{xcolor}
 \usepackage{standalone}
 \usepackage{multirow}
 \usepackage{longtable}
@@ -20,8 +27,11 @@ secnumarabic,
 \usetikzlibrary{decorations.markings}
 \usetikzlibrary{calc}
 \graphicspath{{../png/}}
+\usemintedstyle{vs}
+\setminted[python]{mathescape=true,python3=true}
 
 \newcommand{\comment}[1]{}
+\newcommand{\python}[1]{\textcolor{BrickRed}{\texttt{#1}}}
 
 \begin{document}
 
