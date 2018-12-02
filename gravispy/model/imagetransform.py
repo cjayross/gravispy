@@ -4,7 +4,7 @@ from PIL import Image
 from ..geom import pix2sph, sph2pix, wrap, unwrap
 
 def generate_lens_map(lens, res, args=(), prec=3):
-    coords = list(it.product(*map(np.arange,res)))
+    coords = list(it.product(*map(np.arange, res)))
     x, y = np.asarray(coords).astype(int).T
     theta, phi = pix2sph(x, y, res)
 
@@ -30,7 +30,7 @@ def generate_lens_map(lens, res, args=(), prec=3):
     sigma = np.sin(beta)/np.sin(alpha)
     mu, nu = map(lambda a: sigma*np.sin(a), [theta, phi])
     # this choice of k's needs to be scrutinized
-    k1,k2 = map(lambda a: np.abs(unwrap(a))>np.pi/2, [theta, phi])
+    k1, k2 = map(lambda a: np.abs(unwrap(a))>np.pi/2, [theta, phi])
     psi, gamma = map(arcsin2, [mu, nu], [k1,k2])
 
     # cut out invalid results

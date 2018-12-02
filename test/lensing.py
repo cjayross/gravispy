@@ -98,9 +98,14 @@ def delta2(rO):
         return np.pi/2
 
 init_printing(num_columns=150)
-testS1 = T_sc_lens(unwrap(s),300)
-testS2 = T_lens(unwrap(s),300)
-testS3 = T_thin_lens(unwrap(s),300)
+testS1 = T_sc_lens(unwrap(s),10)
+testS2 = T_lens(unwrap(s),10)
+testS3 = T_thin_lens(unwrap(s),10)
+
+dd = np.abs(np.diff(unwrap(testS2+np.pi)))
+arg = (np.argwhere(dd>5).flatten() + 1)[:2]
+testS2[slice(*arg)] = np.nan
+
 plt.xlabel(r'Observation Angle, $\Theta$')
 plt.ylabel(r'Source Angular Position, $\Phi$')
 plt.plot(s*radians,unwrap(testS1+np.pi),label='Explicit Lens')
@@ -108,6 +113,6 @@ plt.plot(s*radians,unwrap(testS2+np.pi),alpha=.7,label='General Lens')
 plt.plot(s*radians,unwrap(testS3+np.pi),'--k',alpha=.7,label='Thin Lens')
 plt.xlim(0*radians,2*(np.pi*radians))
 plt.ylim(-np.pi*radians,np.pi*radians)
-plt.title(r'Schwarzschild Lensing Methods ($R_O = 300M$)')
+plt.title(r'Schwarzschild Lensing Methods ($R_O = 10M$)')
 plt.legend()
 plt.savefig('sc_lensing.png')
