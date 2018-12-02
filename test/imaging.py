@@ -12,7 +12,7 @@ S = metric.Schwarzschild(1, [t,r,th,ph], timelike=False, lambdify_modules='numpy
 
 #np.seterr(all='raise')
 
-img = Image.open('earth.png')
+img = Image.open('nebula.png')
 print('Generating lens map')
 #lens_map = model.generate_lens_map(lensing.trivial_lens, img.size, (3e+3,3e+7))
 #lens_map = model.generate_lens_map(lensing.thin_lens, img.size, (3e+3,3e+7,lensing.snells_law,1.5))
