@@ -41,7 +41,7 @@ def display_scene():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glPushMatrix()
     # Textured thing
-    tex = read_texture('Equirectangular_projection_SW.jpg')
+    tex = read_texture('example_lens1.png')
     qobj = gluNewQuadric()
     gluQuadricTexture(qobj, GL_TRUE)
     glEnable(GL_TEXTURE_2D)
