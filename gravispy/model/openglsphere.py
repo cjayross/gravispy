@@ -16,7 +16,7 @@ def main():
     glutCreateWindow(name)
     glClearColor(0., 0., 0., 1.)
     glShadeModel(GL_SMOOTH)
-    glEnable(GL_CULL_FACE)
+    #glEnable(GL_CULL_FACE)
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_LIGHTING)
     lightZeroPosition = [10., 4., 10., 1.]
@@ -28,11 +28,11 @@ def main():
     glEnable(GL_LIGHT0)
     glutDisplayFunc(display_scene)
     glMatrixMode(GL_PROJECTION)
-    gluPerspective(40., 1., 1., 40.)
+    gluPerspective(40., 1.77, .9, 60.)
     glMatrixMode(GL_MODELVIEW)
-    gluLookAt(0, 0, 10,
+    gluLookAt(0, 1, 0,
               0, 0, 0,
-              0, 1, 0)
+              0, 0, -1)
     glPushMatrix()
     glutMainLoop()
     return
