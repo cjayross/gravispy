@@ -57,7 +57,14 @@
   {\bibfield  {journal} {\bibinfo  {journal} {Phys. Rev. D}\ }\textbf {\bibinfo
   {volume} {69}} (\bibinfo {year} {2004}),\
   https://arxiv.org/pdf/gr-qc/0307072.pdf}\BibitemShut {NoStop}%
-\bibitem [{sc_()}]{sc_lens}%
+\bibitem [{\citenamefont {Frittelli}\ \emph {et~al.}(2000)\citenamefont
+  {Frittelli}, \citenamefont {Kling},\ and\ \citenamefont {Newman}}]{sc_lens}%
   \BibitemOpen
-  \href@noop {} {\ }\BibitemShut {NoStop}%
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Frittelli}}, \bibinfo {author} {\bibfnamefont {T.~P.}\ \bibnamefont
+  {Kling}}, \ and\ \bibinfo {author} {\bibfnamefont {E.~T.}\ \bibnamefont
+  {Newman}},\ }\href {\doibase https://arxiv.org/pdf/gr-qc/0001037.pdf}
+  {\bibfield  {journal} {\bibinfo  {journal} {Phys. Rev. D}\ }\textbf {\bibinfo
+  {volume} {61}} (\bibinfo {year} {2000}),\
+  https://arxiv.org/pdf/gr-qc/0001037.pdf}\BibitemShut {NoStop}%
 \end{thebibliography}%

@@ -303,7 +303,6 @@ def schwarzschild_lens(angles, rO, rS, metric):
             yield np.NaN
             continue
 
-        sign = np.sign(np.cos(theta))
         if np.abs(theta) > np.pi/2:
             if R_inf2 < 0 or np.sin(theta)**2 < delta2:
                 # the light ray fails to reach rS
@@ -336,7 +335,7 @@ def schwarzschild_lens(angles, rO, rS, metric):
                         )[0]
                 # add back the subtracted singularity in phi_func1
                 phi += 4*np.sqrt((lP-lO)/(2*lP*(1-lP/lR)))
-                yield sign*unwrap(phi)
+                yield unwrap(np.sign(theta)*phi)
             else:
                 warn('brentq resulted in singularity',
                      RuntimeWarning, stacklevel=2)
@@ -349,7 +348,7 @@ def schwarzschild_lens(angles, rO, rS, metric):
                     points=[lR, *unstable_orbits],
                     epsabs=FLOAT_EPSILON,
                     )[0]
-            yield sign*unwrap(phi)
+            yield unwrap(phi)
 
     np.seterr(**errstate)
 
