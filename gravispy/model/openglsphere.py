@@ -27,12 +27,12 @@ def main():
     glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
     glEnable(GL_LIGHT0)
     glutDisplayFunc(display_scene)
+    gluLookAt(0., 1., 0.,
+              0., 0., 0.,
+              0., 0., -1.)
     glMatrixMode(GL_PROJECTION)
-    gluPerspective(40., 1.77, .9, 60.)
+    gluPerspective(40., 1.77, .5, 100.)
     glMatrixMode(GL_MODELVIEW)
-    gluLookAt(0, 1, 0,
-              0, 0, 0,
-              0, 0, -1)
     glPushMatrix()
     glutMainLoop()
     return
@@ -47,7 +47,8 @@ def display_scene():
     glEnable(GL_TEXTURE_2D)
     glBindTexture(GL_TEXTURE_2D, tex)
     glBegin(GL_TRIANGLES)
-    gluSphere(qobj, 1, 50, 50)
+    #glTranslatef(0.,-1.,0.)
+    gluSphere(qobj, 1., 1000, 1000)
     gluDeleteQuadric(qobj)
     glDisable(GL_TEXTURE_2D)
     glPopMatrix()
