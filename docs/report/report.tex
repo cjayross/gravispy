@@ -56,9 +56,10 @@ baselinestretch=1,
 \author{Calvin Ross}
 \affiliation{University of Texas at Dallas, Physics Department}
 \begin{abstract}
-Gravispy is designed to visualize the effects of gravitational lensing of light.
-The goals of the project is to calculate a massive object's effect on local spacetime using the Schwarzschild metric using the result to model the phenomenon in three dimensions.
-Through the usage of the Gauss-Kronrod quadrature formula for integration and the Brent-Dekker method for finding the roots of equations, the null-geodesics representing the trajectories of light are calculated numerically at radii near the event horizon of a black hole, and are used to create a mapping between the light of an unperturbed state and the lensed state.
+Gravispy is designed to visualize the effects of gravitational lensing.
+The goals of the project is to calculate a massive object's effect on spacetime using the Schwarzschild metric and modeling the resulting warped perspective in three dimensions.
+By using the Gauss-Kronrod quadrature formula for integration and the Brent-Dekker method for finding the roots of equations, the null-geodesics representing the trajectories of light are calculated numerically at radii near the event horizon of a black hole.
+These values are then used to create a mapping between the light of the unperturbed state supplied by the user and the final lensed state.
 With this map, a resultant image is produced and is projected onto a sphere using OpenGL to provide a panoramic view of the environment.
 The results of this project have been generally successful.
 Gravitational lensing has been correctly modeled, with the exception of a small shearing of the output image, and the lensing effect is viewable in a three dimensional model as intended.
