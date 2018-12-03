@@ -5,7 +5,7 @@
 \subsection{Background Theory\label{sec:method:background}}
 
 To approach the problem, the first step was to begin with establishing the parameters that will be used to characterize both the parameters of the input and the format to describe the output.
-This was done by establishing two coordinate systems: the \emph{observer's sky} and the \emph{source sky}, and are charted via spherical coordinates.
+This was done by establishing two coordinate systems: the \emph{observer's sky} and the \emph{source sky}, where each are charted via spherical coordinates.
 
 Physically, the observer's sky is defined as the past lightcone at the location of the observer, meaning that the light that is observed at this point describes the set of null-geodesics that have been emitted from the source sky that cross with the observer.
 Therefore, describing the lensing due to the curvature of spacetime amounts to solving the null-geodesic equation using the observer as the initial condition:
@@ -60,7 +60,8 @@ These parameters are illustrated in Fig.(\ref{fig:mappingdiagram}).
 
 Assumptions can be made to simplify the problem.
 In our current implementation we have three variants that are used to calculate the lensing of a Schwarzschild spacetime.
-The simplest case is the thin lens (or Newtonian) approximation of the geodesic by modeling the path as two lines that join at the impact parameter, the point that the light is closest to the lens' center, refer to Fig.(\ref{fig:thinlensdiagram}).
+The simplest case is the thin lens (or Newtonian) approximation of the geodesic by modeling the path as two lines that join at the impact parameter, the point that the light is closest to the lens' center.
+A diagram of this process can be viewed in Fig.(\ref{fig:thinlensdiagram}).
 The relationship between the two trajectories is given by the deflection angle, $\alpha$, which is inversely proportional to the impact parameter $r_P$:
 \begin{equation}
   \alpha = \frac{4M}{r_P}.
@@ -142,9 +143,10 @@ Assuming $s$ satisfies the previously stated condition and $\epsilon$ is the des
 \subsection{Implementation\label{sec:method:implement}}
 
 With a formula for $\Phi$, implementing the lensing function is done by using the function to build a mapping between the source sphere and the observer's sphere.
-We elected to build a discrete mapping object of the lens since this allows us to save it for future use.
+We elected to build a dictionary object of the lens since this allows us to save it for repeated use, which would certainly be needed if we intend to incorporate dynamic scenes in the future.
 For example, if we wanted to create the illusion of the observer orbiting the lens, instead of recalculating the lens each frame, we could roll the image being used as the backdrop along the $x$-axis and then reapply the same lens map calculated earlier.
-However, to build the lens map itself, we had to use spherical geometry to represent a flat, 2D image as the surface of a sphere.
+
+To build the lens map itself, we had to use spherical geometry to represent a flat, 2D image as the surface of a sphere.
 To start, we needed to define a coordinate mapping between pixels of the inputed 2D image and the hypothetical sphere.
 For this we used our methods \python{pix2sph} and \python{sph2pix}:
 \begin{center}
@@ -264,7 +266,7 @@ We unfortunately haven't yet found out the cause of this.
   \caption{\label{fig:imgbuild}
     Illustration marking intermediary steps during the image forming process.
     First, a new image is generated as a default, black canvas of the same resolution as the input image.
-    Then, during execution the algorithm used by our \python{apply\_lensing} method iterates through each pixel of the newly generated image and uses the passed lensing map to determine which pixel from the input should be placed at that location.
+    Then during execution, the algorithm used by our \python{apply\_lensing} method iterates through each pixel of the newly generated image and uses the passed lensing map to determine which pixel from the input should be placed at that location.
 }
   \vspace{3mm}
   \begin{tikzpicture}[>=stealth,line width=3pt]
