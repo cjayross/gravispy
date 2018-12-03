@@ -56,7 +56,14 @@ baselinestretch=1,
 \author{Calvin Ross}
 \affiliation{University of Texas at Dallas, Physics Department}
 \begin{abstract}
-Gravispy is designed to demonstrate the effects of gravitational lensing on light through the calculation of a massive object’s effect on local spacetime and by using the obtained result to visualize the phenomenon in a three dimensional representation. Through the usage of the Gauss-Kronrod quadrature formula and the Brent-Dekker method, numerical solutions are found to the curvature magnitude of light in the vicinity of a black hole, and are used to create a mapping to the light of an unperturbed state. The mapping is used to transform an image of unwarped spacetime to an image of the same environment but near a black hole. This resultant image is projected onto a sphere using OpenGL to provide a panoramic view of the environment. The results of this project have been generally successful. Gravitational lensing has been correctly modeled, with the exception of a small shearing of the image, and the lensing effect is viewable in a three dimensional model. Initial goals were to make the simulation dynamic, but currently only a static simulation is supported. Future improvements to this project could be made by implementing this functionality, and by increasing the accuracy of the simulation by modeling the effect of blueshift and the creation of hidden images.
+Gravispy is designed to visualize the effects of gravitational lensing of light.
+The goals of the project is to calculate a massive object's effect on local spacetime using the Schwarzschild metric using the result to model the phenomenon in three dimensions.
+Through the usage of the Gauss-Kronrod quadrature formula for integration and the Brent-Dekker method for finding the roots of equations, the null-geodesics representing the trajectories of light are calculated numerically at radii near the event horizon of a black hole, and are used to create a mapping between the light of an unperturbed state and the lensed state.
+With this map, a resultant image is produced and is projected onto a sphere using OpenGL to provide a panoramic view of the environment.
+The results of this project have been generally successful.
+Gravitational lensing has been correctly modeled, with the exception of a small shearing of the output image, and the lensing effect is viewable in a three dimensional model as intended.
+Initial goals were to make the simulation dynamic, but currently only a static simulation is supported.
+Future improvements to this project could be made by implementing this functionality, and by increasing the accuracy of the simulation by modeling the effect of blueshift and the creation of hidden images.
 \end{abstract}
 \maketitle
 
