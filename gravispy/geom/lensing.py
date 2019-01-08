@@ -349,7 +349,6 @@ def schwarzschild_lens(angles, rO, rS, metric):
                     epsabs=FLOAT_EPSILON,
                     )[0]
             yield unwrap(phi)
-
     np.seterr(**errstate)
 
 def barriola_vilenkin_lens(angles, rO, rS, metric):

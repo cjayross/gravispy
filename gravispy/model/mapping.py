@@ -41,7 +41,7 @@ def generate_lens_map(lens, res, args=(), prec=3):
 
     return dict(zip(keys, values))
 
-def apply_lensing(img, lens_map, res=None, color_mod=1.):
+def apply_lensing(img, lens_map, res=None):
     if not res:
         res = img.size
     pix = img.load()
@@ -55,5 +55,4 @@ def apply_lensing(img, lens_map, res=None, color_mod=1.):
         except KeyError:
             # the pixel defaults to black
             continue
-    # temporary result
-    new.save('output.png')
+    return new
