@@ -1,5 +1,5 @@
 # gravispy
-Gravitational simulations written in Python.
+Gravitational lensing simulations written in Python.
 
 ### Requirements
 
