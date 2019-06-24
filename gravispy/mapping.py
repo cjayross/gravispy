@@ -1,7 +1,7 @@
 import numpy as np
 import itertools as it
 from PIL import Image
-from ..geom import pix2sph, sph2pix, wrap, unwrap
+from .geom import pix2sph, sph2pix, wrap, unwrap
 
 def generate_lens_map(lens, res, args=(), prec=3):
     coords = list(it.product(*map(np.arange, res)))
