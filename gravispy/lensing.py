@@ -3,11 +3,14 @@ from warnings import warn
 from sympy import lambdify
 from scipy.optimize import brentq, minimize_scalar
 from scipy.integrate import quad
+from riccipy import Metric
 from gravispy.util import FLOAT_EPSILON, wrap
+from gravispy.metrics import SphericalMetric
 
 __all__ = ['spherical_lens']
 
-def spherical_lens(angles, metric, r_obs, r_src):
+def spherical_lens(angles, metric, r_obs, r_src,
+                   min_radius=FLOAT_EPSILON, unstable_orbits=None):
     """
     Calculate the deflections by a static spherically symmetric
     gravitational lens by an exact lensing equation.
@@ -29,15 +32,23 @@ def spherical_lens(angles, metric, r_obs, r_src):
              'than the observer has yet to be tested.',
              RuntimeWarning, stacklevel=2)
 
+    if isinstance(metric, Metric) and not isinstance(metric, SphericalMetric):
+        metric = SphericalMetric(metric)
+
+    if hasattr(metric, 'radius') and (min_radius == FLOAT_EPSILON):
+        min_radius = metric.radius
+
+    if hasattr(metric, 'unstable_orbits') and (unstable_orbits is None):
+        unstable_orbits = metric.unstable_orbits
+
     S2 = metric.radial_factor
     R2 = metric.angular_factor
 
     # The following values are used to identify rays that can be skipped.
     res = minimize_scalar(R2, method='bounded', bounds=(r_obs, r_src))
     R_min1 = res['fun']
-    res = minimize_scalar(R2, method='bounded', bounds=(metric.min_radius, r_obs))
+    res = minimize_scalar(R2, method='bounded', bounds=(min_radius, r_obs))
     R_min2 = res['fun']
-
     delta1 = R_min1/R2(r_obs)
     delta2 = R_min2/R2(r_obs)
 
@@ -63,7 +74,7 @@ def spherical_lens(angles, metric, r_obs, r_src):
             continue
 
         break_points = [0.0]
-        bounds = [metric.min_radius, r_obs]
+        bounds = [min_radius, r_obs]
         # The first element represents multiplicity.
         boundaries = [(1, r_obs, r_src)]
 
@@ -73,9 +84,9 @@ def spherical_lens(angles, metric, r_obs, r_src):
                 yield np.NaN
                 continue
 
-            if hasattr(metric, 'unstable_orbits'):
-                break_points += list(metric.unstable_orbits)
-                bounds[0] = min(metric.unstable_orbits)
+            if unstable_orbits is not None:
+                break_points += list(unstable_orbits)
+                bounds[0] = min(unstable_orbits)
 
             res = brentq(r_dot_sq, *bounds, args=(theta,), full_output=True)
             if not res[1].converged:
@@ -101,12 +112,12 @@ def spherical_lens(angles, metric, r_obs, r_src):
         for path in boundaries:
             points = break_points if r_src is not np.inf else None
             res = quad(phi_integrand, *path[1:], args=(theta,),
-                        points=points, epsabs=FLOAT_EPSILON)
+                       points=points, epsabs=FLOAT_EPSILON)
             phi += path[0] * res[0]
 
         if phi in (np.NaN, np.Inf):
             warn('undefined phi angle encountered',
-                    RuntimeWarning, stacklevel=2)
+                 RuntimeWarning, stacklevel=2)
             yield np.NaN
             continue
 

@@ -8,7 +8,7 @@ __all__ = [
     'apply_lensing',
 ]
 
-def generate_lens_map(lens, res, args=(), prec=3):
+def generate_lens_map(lens, res, args=(), kwargs={}, prec=3):
     coords = list(it.product(*map(np.arange, res)))
     x, y = np.asarray(coords).astype(int).T
     theta, phi = pix2sph(x, y, res)
@@ -22,7 +22,7 @@ def generate_lens_map(lens, res, args=(), prec=3):
     alpha = np.round(arccos2(np.cos(theta)*np.cos(phi)), prec)
     # compress alpha
     alphaz = np.unique(alpha)
-    betaz = np.fromiter(lens(alphaz, *args), np.float64)
+    betaz = np.fromiter(lens(alphaz, *args, **kwargs), np.float64)
     # expand betaz
     beta_map = dict(zip(alphaz, betaz))
     beta = np.fromiter(map(beta_map.__getitem__, alpha), np.float64)
