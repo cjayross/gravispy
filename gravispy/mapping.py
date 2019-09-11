@@ -1,14 +1,19 @@
 import numpy as np
 import itertools as it
 from PIL import Image
-from .geom import pix2sph, sph2pix, wrap, unwrap
+from gravispy.util import pix2sph, sph2pix, wrap
+
+__all__ = [
+    'generate_lens_map',
+    'apply_lensing',
+]
 
 def generate_lens_map(lens, res, args=(), prec=3):
     coords = list(it.product(*map(np.arange, res)))
     x, y = np.asarray(coords).astype(int).T
     theta, phi = pix2sph(x, y, res)
 
-    arccos2 = lambda a: np.sign(unwrap(a))*np.arccos(a)
+    arccos2 = lambda a: np.sign(wrap(a, complement=True))*np.arccos(a)
     arcsin2 = lambda a, k: np.pi*k + (-1)**k*np.arcsin(a)
 
     # consider alphas to be equal if they are the same up
@@ -27,16 +32,17 @@ def generate_lens_map(lens, res, args=(), prec=3):
     # as such, we don't need to be warned that they occurred.
     errstate = np.seterr(all='ignore')
 
-    sigma = np.sin(beta)/np.sin(alpha)
+    sigma = np.sin(beta) / np.sin(alpha)
     mu, nu = map(lambda a: sigma*np.sin(a), [theta, phi])
     # this choice of k's needs to be scrutinized
-    k1, k2 = map(lambda a: np.abs(unwrap(a))>np.pi/2, [theta, phi])
+    k1, k2 = map(lambda a: np.abs(wrap(a, complement=True)) > np.pi/2, [theta, phi])
     psi, gamma = map(arcsin2, [mu, nu], [k1,k2])
 
     # cut out invalid results
     idxs = np.logical_not(np.isnan(psi) | np.isnan(gamma))
     keys = zip(x[idxs], y[idxs])
     values = zip(*sph2pix(psi[idxs], gamma[idxs], res))
+
     np.seterr(**errstate)
 
     return dict(zip(keys, values))
@@ -50,7 +56,7 @@ def apply_lensing(img, lens_map, res=None):
     for pix_coord in it.product(*map(range, res)):
         # we currently aren't implementing hidden images
         try:
-            map_coord = tuple(map(int,lens_map[pix_coord]))
+            map_coord = tuple(map(int, lens_map[pix_coord]))
             new_pix[pix_coord] = pix[map_coord]
         except KeyError:
             # the pixel defaults to black
