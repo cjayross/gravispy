@@ -3,12 +3,14 @@
 
 ## Overview
 
-`gravispy` is a small python module providing methods that take an image file
-and generates a new image that simulates the distortion effects of
-gravitational lensing due to a black hole.
+`gravispy` is a small python module providing methods for simulating the
+physically accurate distortion effects of gravitational lensing due to a black
+hole.
 
-The functions of interest are `generate_lens_map` and `apply_lensing`, but the
-submodules `metrics` and `lensing` are also required.
+The functions of interest are `generate_lens_map` and `apply_lensing` (see
+below for example usage). The submodules `metrics` and `lensing` are
+also used to encapsulate the available metrics and lensing algorithms.  As of
+now, only Schwarzschild spacetimes are supported.
 
 ### Example
 
